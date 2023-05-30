@@ -13,7 +13,7 @@ WORKDIR /menuet/
 COPY package.json package.json
 RUN npm install
 COPY app components contexts hooks public socket styles utils \ 
-    eslintrc.json next-config.js tsconfig.json \
+    .eslintrc.json next.config.js tsconfig.json \
     ./
 RUN npx next build
 WORKDIR /
