@@ -11,6 +11,16 @@ const nextConfig = {
     appDir: true,
   },
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'menuet.ams3.cdn.digitaloceanspaces.com',
+        port: '',
+        pathname: '/content/**',
+      },
+    ],
+  },
   async headers() {
     return [
       {

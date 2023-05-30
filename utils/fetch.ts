@@ -4,7 +4,7 @@ import { RouteInfo } from "./types";
 
 const host = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://menuet-1-fljcfjbucq-ew.a.run.app';
 // const host = 'http://localhost:8080';
-const baseUrl = `${host}/api`;
+export const baseUrl = `${host}/api`;
 
 type CustomRequestInit = RequestInit & {cookies?: ReadonlyRequestCookies};
 

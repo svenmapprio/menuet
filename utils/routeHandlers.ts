@@ -74,14 +74,14 @@ export const routeHandlers: PublicRouteHandlers = {
                 .where('postContent.postId', '=', postId)
                 .execute();
 
-            return {post, relations: relations?.map(r => r.relation), content};
+            return {post, relations: relations.map(r => r.relation), content};
         },
         content: async ({trx, contentId, session}) => {
             return await trx.selectFrom('content').select(['content.name', 'content.id']).where('content.id', '=', contentId).executeTakeFirst();
         },
     },
     put: {
-        post: async ({trx, session, post: {id, name, description}}) => {
+        post: async ({trx, session, post: {id, name, description}, content}) => {
             const insert = await trx.insertInto("post")
                 .onConflict(oc => oc.column("id").doUpdateSet({name, description}))
                 .values({id, name, description})
@@ -91,6 +91,15 @@ export const routeHandlers: PublicRouteHandlers = {
             await trx.insertInto("userPost")
             .values({postId: insert.id, userId: session.user.id, relation: 'owner'})
             .onConflict(oc => oc.columns(["postId", "userId", "relation"]).doNothing())
+            .execute();
+
+            await trx.deleteFrom('postContent')
+            .where('postContent.postId', '=', insert.id)
+            .execute();
+
+            await trx.insertInto('postContent')
+            .values(content.map(c => ({contentId: c.id, postId: insert.id})))
+            .onConflict(oc => oc.columns(['contentId', 'postId']).doNothing())
             .execute();
 
             pgEmitter.to(session.user.id.toString()).emit("mutation", 'posts');

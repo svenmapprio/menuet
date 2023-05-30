@@ -1,6 +1,6 @@
 'use client';
 
-import { domains } from "@/utils/fetch";
+import { baseUrl, domains } from "@/utils/fetch";
 import { useForm } from "@/utils/form";
 import { GetPost, PublicRoutes, PutPost } from "@/utils/routes";
 import { Post } from "@/utils/tables";
@@ -32,52 +32,16 @@ const Form = <T extends unknown>({children, onSubmit}: Props<T>): FCReturns<Prop
     </form>
 }
 
-const ContentView: FC<{contentId: number}> = ({}) => {
-    const [src, setSrc] = useState<string>();
-
-    return <>
-        {!!src && <Image src={src} alt={'Preview of selected image'} height={500} width={500} />}
-        <Input.File onFiles={async files => {
-            for(let i = 0; i < files.length; i++){
-                const content = await axios<GetContent>('http://localhost:8080/api/image', {
-                    method: 'POST',
-                    data: await files[i].arrayBuffer(),
-                    headers: {
-                        'content-type': 'application/octet-stream'
-                    }
-                });
-
-                console.log(content);
-
-                // const res = await fetch('http://localhost:8080/api/image/preview', {
-                //     method: 'POST',
-                //     body: await files[i].arrayBuffer(),
-                //     headers: {
-                //         'content-type': 'application/octet-stream'
-                //     }
-                // });
-
-                // const blob = await res.blob();
-
-                // setSrc(URL.createObjectURL(blob));
-
-                // await fetch('http://localhost:8080/api/image/1234', {
-                //     method: 'PUT', 
-                //     body: await files[i].arrayBuffer(),
-                //     headers: {
-                //         'content-type': 'application/octet-stream'
-                //     }
-                // });
-            }
-        }} />
-    </>
+const ContentView: FC<{content: GetContent}> = ({content: {name, id}}) => {
+    const src = `https://menuet.ams3.cdn.digitaloceanspaces.com/content/${name}-200-200.webp`;
+    
+    return <Image src={src} alt={'Preview of selected image'} height={200} width={200} style={{objectFit: 'cover'}} />;
 }
 
 const Component: FC<{post: PutPost}> = ({post: {content,post}}) => {
     const savePost = useMutation({mutationFn: domains.public.put.post});
-    const addContent = useMutation({mutationFn: domains.public.put.content});
-    const addPostContent = useMutation({mutationFn: domains.public.put.postContent});
     const router = useRouter();
+    const [newContent, setNewContent] = useState<typeof content>([]);
     const [allContent, setAllContent] = useState<typeof content>([]);
 
     const {handleSubmit, formState: {errors}, register} = useForm<Insertable<Post>>({
@@ -94,12 +58,33 @@ const Component: FC<{post: PutPost}> = ({post: {content,post}}) => {
         console.log(data);
     }), [content, post.id]);
 
-    const handleAddContent = async () => {
-        
-    }
+    useEffect(() => {
+        setAllContent([...content, ...newContent]);
+    }, [content, newContent]);
 
     return <div>
-        <button onClick={handleAddContent}>Add content</button>
+        {
+            allContent.map(c => <ContentView key={c.id} content={c} />)
+        }
+        <Input.File resetOnSelect={true} onFiles={async files => {
+            let newContentNext: GetContent[] = [...newContent];
+            for(let i = 0; i < files.length; i++){
+                const res = await axios<GetContent>(`${baseUrl}/image`, {
+                    method: 'PUT',
+                    data: await files[i].arrayBuffer(),
+                    headers: {
+                        'content-type': 'application/octet-stream'
+                    }
+                });
+
+                const content = res.data;
+
+                newContentNext.push(content);
+            }
+
+            setNewContent(newContentNext);
+        }} />
+        {/* <button onClick={handleAddContent}>Add content</button> */}
         <form onSubmit={handleData}>
             <input {...register("name")} />
             <input {...register("description")} />

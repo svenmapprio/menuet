@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { Upload } from "@aws-sdk/lib-storage";
 import { S3Client } from "@aws-sdk/client-s3";
-import { PassThrough, Readable, Writable } from 'stream';
+import { Readable, Writable } from 'stream';
 import { getSession } from '../utils';
-import guards from '@/utils/guards';
 import { ApiError, db, ErrorCode } from '@/utils/db';
-import { DB } from '@/utils/tables';
-import { Session } from '@/utils/types';
-import { parseIntForce } from '@/utils/helpers';
 import { routeHandlers } from '@/utils/routeHandlers';
 
 const s3 = new S3Client({
@@ -16,8 +12,8 @@ const s3 = new S3Client({
     endpoint: 'https://ams3.digitaloceanspaces.com',
     region: 'ams3',
     credentials: {
-        accessKeyId: 'DO003YMBQJ9XYEUBYRHW',
-        secretAccessKey: 'HOwyaYqToBKnYT0j/JC3/mkC+iV+ALiPO3qR0b6we/s'
+        accessKeyId: process.env.DO_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.DO_SECRET_ACCESS_KEY!,
     }
 });
 

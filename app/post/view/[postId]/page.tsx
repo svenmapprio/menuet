@@ -8,7 +8,5 @@ export default async function({params: {postId}}: {params: {postId: string}}) {
     if(!getPost)
         return notFound();
 
-    const {post, relations} = getPost;
-
-    return <PostComponents.View post={post} relations={relations} />;
+    return <PostComponents.View post={getPost} />;
 };
