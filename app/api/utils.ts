@@ -6,7 +6,7 @@ import { NextRequest } from "next/server";
 
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID; 
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const scope = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://menuet-1-fljcfjbucq-ew.a.run.app';
+const scope = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://menuet.city';
 const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, scope);
 
 const setRefreshTokenCookie = (newHeaders: Record<string, string>, refreshToken: string) => {

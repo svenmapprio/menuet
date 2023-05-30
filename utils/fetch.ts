@@ -2,7 +2,7 @@ import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adap
 import { PublicRoutes } from "./routes";
 import { RouteInfo } from "./types";
 
-const host = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://menuet-1-fljcfjbucq-ew.a.run.app';
+const host = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
 // const host = 'http://localhost:8080';
 export const baseUrl = `${host}/api`;
 
