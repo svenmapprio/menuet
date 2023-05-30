@@ -55,8 +55,7 @@ const Component: FC<{post: PutPost}> = ({post: {content,post}}) => {
     const handleData = useCallback(handleSubmit(async data => {
         const res = await savePost.mutateAsync({post: {id: post.id, ...data}, content: allContent});
         router.replace(`/post/view/${res.id}`);
-        console.log(data);
-    }), [content, post.id]);
+    }), [post.id, allContent]);
 
     useEffect(() => {
         setAllContent([...content, ...newContent]);
