@@ -12,9 +12,15 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
 WORKDIR /menuet/
 COPY package.json package.json
 RUN npm install
-COPY app components contexts hooks public socket styles utils \ 
-    .eslintrc.json next.config.js tsconfig.json \
-    ./
+COPY app app 
+COPY components components 
+COPY contexts contexts 
+COPY hooks hooks 
+COPY public public 
+COPY socket socket 
+COPY styles styles 
+COPY utils utils 
+COPY .eslintrc.json next.config.js tsconfig.json ./
 RUN npx next build
 WORKDIR /
 COPY nginx.conf /etc/nginx/nginx.conf
