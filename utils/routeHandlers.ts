@@ -97,10 +97,12 @@ export const routeHandlers: PublicRouteHandlers = {
             .where('postContent.postId', '=', insert.id)
             .execute();
 
-            await trx.insertInto('postContent')
-            .values(content.map(c => ({contentId: c.id, postId: insert.id})))
-            .onConflict(oc => oc.columns(['contentId', 'postId']).doNothing())
-            .execute();
+            if(content.length){
+                await trx.insertInto('postContent')
+                .values(content.map(c => ({contentId: c.id, postId: insert.id})))
+                .onConflict(oc => oc.columns(['contentId', 'postId']).doNothing())
+                .execute();
+            }
 
             pgEmitter.to(session.user.id.toString()).emit("mutation", 'posts');
 

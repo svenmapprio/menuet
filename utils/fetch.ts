@@ -2,8 +2,11 @@ import { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adap
 import { PublicRoutes } from "./routes";
 import { RouteInfo } from "./types";
 
-const host = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '';
-// const host = 'http://localhost:8080';
+const host = process.env.NODE_ENV === 'development' 
+    ? 'http://localhost:8080' 
+    : typeof window === 'undefined' ? 'https://menuet.city' 
+    : '';
+
 export const baseUrl = `${host}/api`;
 
 type CustomRequestInit = RequestInit & {cookies?: ReadonlyRequestCookies};
