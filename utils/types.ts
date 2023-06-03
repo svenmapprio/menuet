@@ -52,6 +52,15 @@ export type ConnectionCheckEmission = {type: 'connectionCheck', data: {}}
 export type Emission = SessionEmission|GroupJoinEmission|ConnectionCheckEmission;
 export type EmissionWrapper = {isEmission: true, socketId: string, emissionPayload: Emission};
 
+export type UserSearchSocketQuery = {type: 'search', data: { term: string }, returns: UsersListItem[]};
+export type SocketQuery = UserSearchSocketQuery;
+export type SocketQueryReturns = {
+    search: UserSearchSocketQuery['returns']
+}
+export type SocketQueryRequest = Omit<SocketQuery, 'returns'>;
+export type SocketQueryWrapper = {isQuery: true, queryPayload: SocketQueryRequest, queryId: string};
+export type SocketQueryResponse<T> = {queryId: string, data: T};
+
 export type Nullable<T> = {
     [P in keyof T]: T[P] | null;
 };

@@ -59,7 +59,7 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
                 scope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
             }));
         }
-    }, [window, typeof google]);
+    }, [typeof window, typeof google]);
    
     return <SessionContext.Provider value={{sessionData, onSignIn, onSignOut}}>
         {children}

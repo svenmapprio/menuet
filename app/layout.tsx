@@ -1,9 +1,9 @@
 import QueryApp from "./queryApp";
-import SocketApp from "./socketApp";
 import './globals.css';
 import { SessionContextProvider } from "@/contexts/SessionContext";
 import Layout from "../components/Layout";
 import { ModalContextProvider } from "@/contexts/ModalContext";
+import { SocketContextProvider } from "@/contexts/SocketContext";
 
 export const metadata = {
     title: 'Menuet',
@@ -24,7 +24,7 @@ export default function RootLayout({
         </head>
         <body style={{backgroundColor: "Background"}}>
             <QueryApp>
-            <SocketApp>
+            <SocketContextProvider>
             <SessionContextProvider>
             <ModalContextProvider>
             <Layout>
@@ -32,7 +32,7 @@ export default function RootLayout({
             </Layout>
             </ModalContextProvider>
             </SessionContextProvider>
-            </SocketApp>
+            </SocketContextProvider>
             </QueryApp>
         </body>
       </html>

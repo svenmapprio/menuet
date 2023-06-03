@@ -1,12 +1,21 @@
+import {config} from 'dotenv'
+
+try{
+    config({path: `${__dirname}/../.env.local`});
+}
+catch(e){
+    console.log('env local error', e);
+}
+
 import {Server, Socket} from 'socket.io';
 import express from 'express';
 import {Pool} from 'pg';
 import {createAdapter} from '@socket.io/postgres-adapter';
 import { Emitter } from "@socket.io/postgres-emitter";
-import {Emission, EmissionWrapper} from '../utils/types';
+import {Emission, EmissionWrapper, Session, SocketQuery, SocketQueryResponse, SocketQueryWrapper} from '../utils/types';
 import {waitUntil} from '../utils/helpers';
+import {pgEmitter, db, dbCommon} from '../utils/db';
 import axios from 'axios';
-import {config} from 'dotenv'
 
 const state = {
     connected: false,
@@ -16,25 +25,11 @@ const state = {
 
 const app = express();
 
-if(process.argv[process.argv.length - 1] === 'dev')
-    config({path: '../.env.local'});
-
 app.get('/connection', (req, res) => {
     res.send(state.connected);
 });
 
 const server = app.listen(4010);
-
-const dbPool = new Pool({
-    host: process.env.DATABASE_HOST,
-    database: process.env.DATABASE_DB,
-    port: parseInt(process.env.DATABASE_PORT ?? ''),
-    password: process.env.DATABASE_PASS,
-    user: process.env.DATABASE_USER,
-    ssl: {rejectUnauthorized: false}    
-});
-
-const pgEmitter = new Emitter(dbPool);
 
 const online = async () => axios.get('https:/8.8.8.8');
 
@@ -75,14 +70,30 @@ const startSocket = async () => {
     const io = new Server();
 
     const adapter = io.adapter(createAdapter(pool, { errorHandler: async (e) => {
+        console.log(e.message);
         process.exit();
     }, heartbeatInterval: 500, heartbeatTimeout: 60000}));
 
     adapter.listen(4000);
 
     await new Promise<void>(async res => {
-        adapter.on('connection', socket => {
+        adapter.on('connection', async socket => {
             console.log('got adapter connection', socket.id);
+
+            socket.on('query', async (q: SocketQueryWrapper) => {
+                if(!q.isQuery){
+                    console.warn('Non query payload sent to query channel, ignoring');
+                    return;
+                }
+
+                const query = await queryHandlers[q.queryPayload.type](socket, q.queryPayload.data);
+                const response: SocketQueryResponse<any> = {
+                    queryId: q.queryId,
+                    data: query
+                };
+
+                pgEmitter.to(socket.id).emit(`response_${q.queryId}`,  response);
+            });
         });
 
         adapter.on('disconnect', e => {
@@ -140,16 +151,32 @@ process.on('SIGINT', () => {
     process.exit();
 });
 
-type handlerObject<T extends Emission> = {[k in T['type']]: (socket: Socket, d: T extends {type: k, data: infer data} ? data : never) => void}
+const sessions: Map<string, Session> = new Map();
+
+type handlerObject<T extends Emission | SocketQuery> = {[k in T['type']]: (socket: Socket, d: T extends {type: k, data: infer data} ? data : never) => T extends SocketQuery ? Promise<SocketQuery['returns']> : void}
 
 const emissionHandlers: handlerObject<Emission> = {
-    session: (socket, {user}) => {
-        socket.join(user.id.toString());
+    session: (socket, session) => {
+        socket.join(session.user.id.toString());
+        
+        sessions.set(socket.id, session);
     },
     groupJoin: ({}) => {
 
     },
     connectionCheck: ({}) => {
 
+    }
+}
+
+const queryHandlers: handlerObject<SocketQuery> = {
+    search: async (socket, {term}) => {
+        const session = sessions.get(socket.id);
+
+        const res = await db.transaction().execute(async trx => {
+            return dbCommon.getUsersWithStatus(trx, session?.user.id, term);
+        });
+
+        return res;
     }
 }

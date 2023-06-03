@@ -1,7 +1,7 @@
 import {sql} from 'kysely';
 import { GetPost, PublicRoutes, PutPost, } from "./routes";
 import { RouteHandlers } from "./types";
-import { pgEmitter } from './db';
+import { dbCommon, pgEmitter } from './db';
 
 export interface PublicRouteHandlers extends RouteHandlers<PublicRoutes>{}
 
@@ -37,23 +37,7 @@ export const routeHandlers: PublicRouteHandlers = {
                 .execute();
         },
         users: async ({trx, session, filter = ''}) => {
-            const q = trx.selectFrom(['user as u'])
-            .leftJoin('user as uu', join => join.on('uu.id', '=', session?.user.id ?? null))
-            .leftJoin('friend as self', 'self.userId', 'uu.id')
-            .leftJoin('friend as other', 'other.friendId', 'uu.id')
-            .select(['u.handle', 'u.id'])
-            .select(sql<boolean>`case 
-                when self.user_id is not null then true else false end
-            `.as('self'))
-            .select(sql<boolean>`case 
-                when other.user_id is not null then true else false end
-            `.as('other'))
-            .where('u.handle', 'ilike', `%${filter}%`)
-            .where('u.id', '<>', session!.user.id);
-
-            const users = await q.execute();
-
-            return users;
+            return dbCommon.getUsersWithStatus(trx, session?.user.id);
         },
         post: async ({trx, postId, session}) => {
             const post = await trx

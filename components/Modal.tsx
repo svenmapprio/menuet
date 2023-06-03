@@ -23,7 +23,7 @@ const Modal: FC<PropsWithChildren<{modalKey: ModalKey}>> = ({modalKey, children}
     const isTargetedOpen = (o: boolean | Object): o is TargetedOpen => o.hasOwnProperty("target");
     
     useEffect(() => {
-        if(!document) return;
+        if(typeof document === 'undefined') return;
         if(typeof window === 'undefined') return;
 
         if(open){
@@ -61,7 +61,7 @@ const Modal: FC<PropsWithChildren<{modalKey: ModalKey}>> = ({modalKey, children}
         else{
             document.removeEventListener('click', handleOutsideClick, false);
         }
-    }, [open, document, handleOutsideClick]);
+    }, [open, typeof window, handleOutsideClick]);
 
     return open ? <div onClick={() => setOpen(false)} ref={ref} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height, width, ...rect, position: 'fixed', zIndex: ZLayers.top + ZTops.Modal, }}>
         {children}

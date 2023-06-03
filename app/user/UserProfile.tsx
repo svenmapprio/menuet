@@ -78,6 +78,11 @@ const UserInfo: FC<{session: Session}> = ({session}) => {
                 <p>{errors.lastName?.message}</p>
                 <button type={"submit"}>Save</button>
             </form>
+            <button >
+                <Link href={'/post/edit/new'}>
+                    Make a new post
+                </Link>
+            </button>
             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start'}}>
                 <h2>Posts</h2>
                 {

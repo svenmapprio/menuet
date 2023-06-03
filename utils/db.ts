@@ -75,6 +75,33 @@ export const dbCommon = {
         }
 
         return session;
+    },
+    getUsersWithStatus: async(trx: Transaction<DB>, userId: number | null = null, filter = '') => {
+        const q = trx.selectFrom(['user as u'])
+            .leftJoin('user as uu', join => join.on('uu.id', '=', userId))
+            .leftJoin('friend as self', join => (
+                join
+                    .on('self.userId', '=', userId)
+                    .onRef('self.friendId', '=', 'u.id')
+            ))
+            .leftJoin('friend as other', join => (
+                join
+                    .onRef('other.userId', '=', 'u.id')
+                    .on('other.friendId', '=', userId)
+            ))
+            .select(['u.handle', 'u.id'])
+            .select(sql<boolean>`case 
+                when self.user_id is not null then true else false end
+            `.as('self'))
+            .select(sql<boolean>`case 
+                when other.user_id is not null then true else false end
+            `.as('other'))
+            .where('u.handle', 'ilike', `%${filter}%`)
+            .where('u.id', '<>', userId);
+
+        const users = await q.execute();
+
+        return users;
     }
 }
 

@@ -12,7 +12,7 @@ const initials = (str: string) => str.trim().split(/ /gm).map(s => s[0]).join(""
 
 const SessionNavComponent: FC = () => {
   const {modals: {ManageProfile: [open, setOpen]}} = useContext(ModalContext);
-  const {onSignIn,onSignOut,sessionData} = useContext(SessionContext);
+  const {onSignIn,sessionData} = useContext(SessionContext);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if(sessionData.isError)
