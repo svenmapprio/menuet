@@ -130,7 +130,7 @@ export const routeHandlers: PublicRouteHandlers = {
                     ).as('user')
                 ])
                 .where('outer.conversationId', '=', conversationId)
-                .execute()
+                .execute();
 
             return {conversation,messages,post};
         }
