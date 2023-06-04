@@ -29,7 +29,7 @@ const Component: FC<{post: GetPost}> = ({post: {post, content, relations}}) => {
         {
             isOwner && <>
                 <Link href={`/post/edit/${post.id}`}>Edit</Link>
-                <button>Share</button>
+                <Link href={`/post/share/${post.id}`}>Share</Link>
             </>
         }
     </>;

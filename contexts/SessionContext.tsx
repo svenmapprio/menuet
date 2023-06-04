@@ -2,8 +2,9 @@
 
 import { domains } from "@/utils/fetch";
 import { Session } from "@/utils/types";
-import { createContext, FC, PropsWithChildren, useCallback, useEffect, useState } from "react";
+import { createContext, FC, PropsWithChildren, useCallback, useContext, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient, UseQueryResult } from "react-query";
+import SocketContext from "./SocketContext";
 
 type SessionContextValue = {
     sessionData: UseQueryResult<Session | null>,
@@ -15,6 +16,7 @@ const SessionContext = createContext({} as SessionContextValue);
 
 export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
     const queryClient = useQueryClient();
+    const socketContext = useContext(SocketContext);
     const [googleClient, setGoogleClient] = useState<google.accounts.oauth2.CodeClient>();
     const [code, setCode] = useState<string|null>(null);
 
@@ -37,14 +39,15 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
     }, [deleteSession]);
 
     const sessionData = useQuery({
-        queryFn: async args => {
-          const headers = {'Authorization': code ? `Bearer ${code}` : ''};
-    
-          setCode(null);
-    
-          return await domains.public.get.session({}, {headers});
+        queryFn: async () => {
+            const headers = {'Authorization': code ? `Bearer ${code}` : ''};
+        
+            setCode(null);
+        
+            return await domains.public.get.session({}, {headers});
         },
-        queryKey: 'session'
+        queryKey: ['session'],
+        enabled: socketContext.isConnected,
     });
 
     useEffect(() => {

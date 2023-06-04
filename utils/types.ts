@@ -8,6 +8,8 @@ export type Session = {
 }
 
 export type UsersListItem = Pick<Selectable<User>, 'handle'|'id'> & {self: boolean, other: boolean};
+export type ShareUsersListItem = Pick<Selectable<User>, 'handle'|'id'> & {shared: boolean};
+export type UsersFilter = 'all' | 'friend';
 
 export type RouteInfo<Args extends object | void = object, Returns extends unknown = void> = {
     args: Args,

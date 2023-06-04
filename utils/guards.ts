@@ -47,11 +47,40 @@ const guardHelpers = {
         isPublic: async () => {
             return false;
         },
+    },
+    conversation: {
+        isParticipant: async (trx: Transaction<DB>, conversationId: number, session: Session) => (
+            !!await trx.selectFrom('conversation').innerJoin('conversationUser', join => (
+                join
+                    .on('conversationUser.userId', '=', session.user.id)
+                    .onRef('conversationUser.conversationId', '=', 'conversation.id')
+            )).executeTakeFirst()
+        )
+    },
+    user: {
+        isFriend: async (trx: Transaction<DB>, userId: number, session: Session) => {
+            const findRequest = async (a: number, b: number) => trx.selectFrom('friend').select('userId')
+                .where('friend.userId', '=', a)
+                .where('friend.friendId', '=', b)
+                .executeTakeFirst();
+
+            return await Promise.all([
+                findRequest(userId, session.user.id),
+                findRequest(session.user.id, userId),
+            ]).then(res => res.every(Boolean));
+        }
     }
 }
 
 const guards: PublicRouteGuards = {
-    delete: {},
+    delete: {
+        userPost: async ({trx, postId, userId, session}) => {
+            if(
+                !await guardHelpers.post.isOwner(trx, postId, session)
+            )
+                throw new ApiError(ErrorCode.ResourcePermissions);
+        }
+    },
     get: {
         post: async ({session, postId, trx}) => {
             if(
@@ -67,6 +96,14 @@ const guards: PublicRouteGuards = {
             )
                 throw new ApiError(ErrorCode.ResourcePermissions);
         },
+        chat: async ({trx, userId, session}) => {
+            if(!await guardHelpers.user.isFriend(trx, userId, session))
+                throw new ApiError(ErrorCode.ResourcePermissions);
+        },
+        conversation: async ({conversationId, session, trx}) => {
+            if(!await guardHelpers.conversation.isParticipant(trx, conversationId, session))
+                throw new ApiError(ErrorCode.ResourcePermissions);
+        }
     },
     put: {
         postContent: async ({trx, postId, contentId, session}) => {
@@ -74,6 +111,17 @@ const guards: PublicRouteGuards = {
                 !await guardHelpers.post.isOwner(trx, postId, session) || 
                 !await guardHelpers.content.isOwner(trx, contentId, session.user.id)
             )
+                throw new ApiError(ErrorCode.ResourcePermissions);
+        },
+        userPost: async ({trx, postId, userId, session}) => {
+            if(
+                !await guardHelpers.post.isOwner(trx, postId, session) ||
+                !await guardHelpers.user.isFriend(trx, userId, session)
+            )
+                throw new ApiError(ErrorCode.ResourcePermissions);
+        },
+        message: async ({trx, session, conversationId}) => {
+            if(!await guardHelpers.conversation.isParticipant(trx, conversationId, session))
                 throw new ApiError(ErrorCode.ResourcePermissions);
         }
     }

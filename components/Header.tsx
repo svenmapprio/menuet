@@ -7,6 +7,7 @@ import { FC, useContext, useEffect, useRef, useState } from "react";
 import Modal from "./Modal";
 import Spinner from "./Spinner";
 import { useQuery } from 'react-query'
+import SocketStatus from "./SocketStatus";
 
 const initials = (str: string) => str.trim().split(/ /gm).map(s => s[0]).join("").toUpperCase();
 
@@ -43,8 +44,13 @@ const SessionNavComponent: FC = () => {
 const Header: FC = ({}) => {
     return <>
         <div style={{height: 30}}></div>
-        <div style={{position: 'sticky', top: 0}}>
-            <Link href={"/"}>Menuet</Link>
+        <div style={{position: 'sticky', top: 0, display: 'flex', alignItems: 'center', gap: 10}}>
+            <div>
+              <Link href={"/"}>Menuet</Link>
+            </div>
+            <div style={{height: 30, position: 'relative'}}>
+              <SocketStatus />
+            </div>
         </div>
         <div style={{position: 'fixed', top: 0, right: 0, zIndex: ZLayers.top, display: 'flex', justifyContent: 'space-between', backgroundColor: 'Background', height: '50px'}}>
             <SessionNavComponent />

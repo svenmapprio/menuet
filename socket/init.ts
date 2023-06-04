@@ -158,7 +158,7 @@ type handlerObject<T extends Emission | SocketQuery> = {[k in T['type']]: (socke
 const emissionHandlers: handlerObject<Emission> = {
     session: (socket, session) => {
         socket.join(session.user.id.toString());
-        
+
         sessions.set(socket.id, session);
     },
     groupJoin: ({}) => {
@@ -174,7 +174,7 @@ const queryHandlers: handlerObject<SocketQuery> = {
         const session = sessions.get(socket.id);
 
         const res = await db.transaction().execute(async trx => {
-            return dbCommon.getUsersWithStatus(trx, session?.user.id, term);
+            return dbCommon.getUsersWithStatus(trx, session?.user.id, 'all', term);
         });
 
         return res;

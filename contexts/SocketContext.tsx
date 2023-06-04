@@ -60,9 +60,9 @@ export const SocketContextProvider: FC<PropsWithChildren> = ({children}) => {
         if(socket){
             socket.on('connect', () => {
                 setCookie(null, 'socketId', socket.id, {sameSite: 'strict'});
-                queryClient.invalidateQueries('session');
                 console.log('got socket connection', socket.id);
                 setIsConnected(true);
+                queryClient.invalidateQueries('session');
             });
 
             socket.on('disconnect', () => {
@@ -85,7 +85,7 @@ export const SocketContextProvider: FC<PropsWithChildren> = ({children}) => {
     }, [socket, queryClient]);
    
     return <SocketContext.Provider value={{isConnected, querySocket}}>
-        {isConnected ? children : <Spinner />}
+        {children}
     </SocketContext.Provider>
 }
 

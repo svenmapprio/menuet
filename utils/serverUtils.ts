@@ -8,11 +8,19 @@ export const fecthCommon = {
 
         if(!postId) return undefined;
 
-        const post = await domains.public.get.post({postId}, {
+        return await domains.public.get.post({postId}, {
             cache: 'no-store',
             cookies: cookies(),
         });
+    },
+    getChat: async (userIdStr: string) => {
+        const userId = parseIntForce(userIdStr);
 
-        return post;
+        if(!userId) return undefined;
+
+        return await domains.public.get.chat({userId}, {
+            cache: 'no-store',
+            cookies: cookies(),
+        });
     }
 }

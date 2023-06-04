@@ -1,3 +1,7 @@
+:root{
+  --placeholder: 'rgba(0,0,0,0.5)';
+}
+
 body{
   padding: 0;
   margin: 0;
@@ -12,4 +16,13 @@ body{
 a {
   color: white;
   text-decoration: none;
+}
+
+textarea{
+  all: unset;
+  overflow:hidden;
+}
+
+textarea::placeholder{
+  color: var(--placeholder);
 }

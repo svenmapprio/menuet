@@ -140,7 +140,7 @@ const queryHandlers = {
     search: (socket, { term }) => __awaiter(void 0, void 0, void 0, function* () {
         const session = sessions.get(socket.id);
         const res = yield db_1.db.transaction().execute((trx) => __awaiter(void 0, void 0, void 0, function* () {
-            return db_1.dbCommon.getUsersWithStatus(trx, session === null || session === void 0 ? void 0 : session.user.id, term);
+            return db_1.dbCommon.getUsersWithStatus(trx, session === null || session === void 0 ? void 0 : session.user.id, 'all', term);
         }));
         return res;
     })

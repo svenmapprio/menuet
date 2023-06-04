@@ -3,6 +3,7 @@
 import SocketContext from "@/contexts/SocketContext";
 import { domains } from "@/utils/fetch";
 import { UsersListItem } from "@/utils/types";
+import Link from "next/link";
 import { FC, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "react-query";
 
@@ -46,11 +47,14 @@ const Component: FC = () => {
             await removeFriend.mutateAsync(user);
     }
 
+    const chatsData = useQuery({
+        queryKey: 'chats',
+        queryFn: () => domains.public.get.chats()
+    });
+
     return <>
         <div>
-            All your chats ... 
             <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-            
         </div>
         {
             searchData.isLoading 
@@ -62,6 +66,11 @@ const Component: FC = () => {
                     </div>) : 
             null
         }
+        <div>
+            {chatsData.data?.map(c => <div key={c.id}>
+                <Link href={`/chat/${c.id}`}>{c.handle}</Link>
+            </div> )}
+        </div>
     </>
 }
 

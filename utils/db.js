@@ -69,9 +69,8 @@ exports.dbCommon = {
         }
         return session;
     }),
-    getUsersWithStatus: (trx, userId = null, filter = '') => __awaiter(void 0, void 0, void 0, function* () {
-        const q = trx.selectFrom(['user as u'])
-            .leftJoin('user as uu', join => join.on('uu.id', '=', userId))
+    getUsersBaseQuery: (trx, userId) => {
+        return trx.selectFrom(['user as u'])
             .leftJoin('friend as self', join => (join
             .on('self.userId', '=', userId)
             .onRef('self.friendId', '=', 'u.id')))
@@ -85,10 +84,43 @@ exports.dbCommon = {
             .select((0, kysely_1.sql) `case 
                 when other.user_id is not null then true else false end
             `.as('other'))
-            .where('u.handle', 'ilike', `%${filter}%`)
-            .where('u.id', '<>', userId);
-        const users = yield q.execute();
-        return users;
+            .$if(!!userId, qb => qb.where('u.id', '<>', userId));
+    },
+    getShareUsers: (trx, userId, postId) => {
+        const q = exports.dbCommon.getUsersBaseQuery(trx, userId)
+            .leftJoin('userPost as up', join => (join
+            .on('up.postId', '=', postId)
+            .onRef('up.userId', '=', 'u.id')
+            .on('up.relation', '<>', 'owner')))
+            .select((0, kysely_1.sql) `case
+                when up.user_id is not null then true else false end
+            `.as('shared'))
+            .where('self.userId', 'is not', null)
+            .where('other.userId', 'is not', null);
+        return q.execute();
+    },
+    getUsersWithStatus: (trx, userId = null, filter = 'all', searchTerm = '') => {
+        const q = exports.dbCommon.getUsersBaseQuery(trx, userId)
+            .where('u.handle', 'ilike', `%${searchTerm}%`);
+        return q.execute();
+    },
+    getPost: (trx, postId, userId) => __awaiter(void 0, void 0, void 0, function* () {
+        const post = yield trx
+            .selectFrom('post')
+            .select(['post.id', 'post.name', 'post.description', 'post.created'])
+            .where('id', '=', postId)
+            .executeTakeFirstOrThrow();
+        const relations = yield trx.selectFrom('userPost')
+            .select('relation')
+            .where('userId', '=', userId)
+            .where('postId', '=', postId)
+            .execute();
+        const content = yield trx.selectFrom('postContent')
+            .innerJoin('content', 'content.id', 'postContent.contentId')
+            .select(['content.id', 'content.name'])
+            .where('postContent.postId', '=', postId)
+            .execute();
+        return { post, relations: relations.map(r => r.relation), content };
     })
 };
 var ErrorCode;

@@ -23,6 +23,16 @@ export interface Content {
   name: Generated<string>;
 }
 
+export interface Conversation {
+  id: Generated<number>;
+  postId: number;
+}
+
+export interface ConversationUser {
+  conversationId: number;
+  userId: number;
+}
+
 export interface Event {
   id: Generated<number>;
   name: string;
@@ -39,6 +49,14 @@ export interface Image {
   left: Generated<number>;
   width: Generated<number>;
   height: Generated<number>;
+}
+
+export interface Message {
+  id: Generated<number>;
+  conversationId: number;
+  text: Generated<string>;
+  created: Generated<Timestamp>;
+  userId: number;
 }
 
 export interface Post {
@@ -76,9 +94,12 @@ export interface UserPost {
 export interface DB {
   account: Account;
   content: Content;
+  conversation: Conversation;
+  conversationUser: ConversationUser;
   event: Event;
   friend: Friend;
   image: Image;
+  message: Message;
   post: Post;
   postContent: PostContent;
   socketIoAttachments: SocketIoAttachments;

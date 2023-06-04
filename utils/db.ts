@@ -7,7 +7,7 @@ import {
     sql,
     Transaction
 } from 'kysely'
-import { Emission, EmissionWrapper, Session } from './types';
+import { Emission, EmissionWrapper, Session, UsersFilter } from './types';
 import { TokenPayload } from 'google-auth-library';
 import { NextRequest } from 'next/server';
 import { DB } from './tables';
@@ -76,9 +76,8 @@ export const dbCommon = {
 
         return session;
     },
-    getUsersWithStatus: async(trx: Transaction<DB>, userId: number | null = null, filter = '') => {
-        const q = trx.selectFrom(['user as u'])
-            .leftJoin('user as uu', join => join.on('uu.id', '=', userId))
+    getUsersBaseQuery: (trx: Transaction<DB>, userId: number | null) => {
+        return trx.selectFrom(['user as u'])
             .leftJoin('friend as self', join => (
                 join
                     .on('self.userId', '=', userId)
@@ -96,12 +95,50 @@ export const dbCommon = {
             .select(sql<boolean>`case 
                 when other.user_id is not null then true else false end
             `.as('other'))
-            .where('u.handle', 'ilike', `%${filter}%`)
-            .where('u.id', '<>', userId);
+            .$if(!!userId, qb => qb.where('u.id', '<>', userId));
+    },
+    getShareUsers: (trx: Transaction<DB>, userId: number, postId: number) => {
+        const q = dbCommon.getUsersBaseQuery(trx, userId)
+            .leftJoin('userPost as up', join => (
+                join
+                    .on('up.postId', '=', postId)
+                    .onRef('up.userId', '=', 'u.id')
+                    .on('up.relation', '<>', 'owner')
+            ))
+            .select(sql<boolean>`case
+                when up.user_id is not null then true else false end
+            `.as('shared'))
+            .where('self.userId','is not', null)
+            .where('other.userId', 'is not', null);
 
-        const users = await q.execute();
+        return q.execute();
+    },
+    getUsersWithStatus: (trx: Transaction<DB>, userId: number | null = null, filter: UsersFilter = 'all', searchTerm = '') => {
+        const q = dbCommon.getUsersBaseQuery(trx, userId)
+            .where('u.handle', 'ilike', `%${searchTerm}%`);
+        
+        return q.execute();
+    },
+    getPost: async (trx: Transaction<DB>, postId: number, userId: number) => {
+        const post = await trx
+            .selectFrom('post')
+            .select(['post.id', 'post.name', 'post.description', 'post.created'])
+            .where('id', '=', postId)
+            .executeTakeFirstOrThrow();
 
-        return users;
+        const relations = await trx.selectFrom('userPost')
+            .select('relation')
+            .where('userId', '=', userId)
+            .where('postId', '=', postId)
+            .execute();
+
+        const content = await trx.selectFrom('postContent')
+            .innerJoin('content', 'content.id', 'postContent.contentId')
+            .select(['content.id', 'content.name'])
+            .where('postContent.postId', '=', postId)
+            .execute();
+
+        return {post, relations: relations.map(r => r.relation), content};
     }
 }
 
