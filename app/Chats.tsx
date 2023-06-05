@@ -1,5 +1,6 @@
 'use client';
 
+import SessionContext from "@/contexts/SessionContext";
 import SocketContext from "@/contexts/SocketContext";
 import { domains } from "@/utils/fetch";
 import { UsersListItem } from "@/utils/types";
@@ -47,7 +48,10 @@ const Component: FC = () => {
             await removeFriend.mutateAsync(user);
     }
 
+    const session = useContext(SessionContext);
+
     const chatsData = useQuery({
+        enabled: !!session.sessionData?.data,
         queryKey: 'chats',
         queryFn: () => domains.public.get.chats()
     });

@@ -68,13 +68,6 @@ const startSocket = async () => {
 
     console.log('connecting to database');
 
-    try{
-        pool.connect()
-    }
-    catch(e){
-        console.log(e);
-    }
-
     const client = await waitUntil(() => pool.connect());
 
     console.log('got connection to database');

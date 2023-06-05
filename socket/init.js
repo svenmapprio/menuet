@@ -60,12 +60,6 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
         },
     });
     console.log('connecting to database');
-    try {
-        pool.connect();
-    }
-    catch (e) {
-        console.log(e);
-    }
     const client = yield (0, helpers_1.waitUntil)(() => pool.connect());
     console.log('got connection to database');
     yield client.query(`

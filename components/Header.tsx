@@ -19,7 +19,7 @@ const SessionNavComponent: FC = () => {
     if(sessionData.isError)
       console.log(sessionData.error);
   }, [sessionData.isError]);
-  
+
     return <>
       <div ref={ref} style={{height: 'calc(100% - 10px)', padding: 5, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
           {

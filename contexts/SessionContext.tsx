@@ -2,7 +2,7 @@
 
 import { domains } from "@/utils/fetch";
 import { Session } from "@/utils/types";
-import { createContext, FC, PropsWithChildren, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, FC, PropsWithChildren, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient, UseQueryResult } from "react-query";
 import SocketContext from "./SocketContext";
 
@@ -18,7 +18,7 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
     const queryClient = useQueryClient();
     const socketContext = useContext(SocketContext);
     const [googleClient, setGoogleClient] = useState<google.accounts.oauth2.CodeClient>();
-    const [code, setCode] = useState<string|null>(null);
+    // const [code, setCode] = useState<string|null>(null);
 
     const deleteSession = useMutation({
         mutationFn: async () => {
@@ -34,17 +34,22 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
     }, [googleClient]);
 
     const onSignOut = useCallback(() => {
-        setCode(null);
+        // setCode(null);
+        codeRef.current = null;
         deleteSession.mutate();
     }, [deleteSession]);
 
+    const codeRef = useRef<string | null>(null);
+
     const sessionData = useQuery({
-        queryFn: async () => {
-            const headers = {'Authorization': code ? `Bearer ${code}` : ''};
-        
-            setCode(null);
-        
-            return await domains.public.get.session({}, {headers});
+        queryFn: async ctx => {
+            const headers = {'Authorization': codeRef.current ? `Bearer ${codeRef.current}` : ''};
+
+            codeRef.current = null;
+
+            const session = await domains.public.get.session({}, {headers, cache: 'no-store'});
+
+            return session;
         },
         queryKey: ['session'],
         enabled: socketContext.isConnected,
@@ -57,7 +62,9 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
             setGoogleClient(google.accounts.oauth2.initCodeClient({
                 client_id: '40415257648-lln4524kpreapkqkh8lt18lrachk00sa.apps.googleusercontent.com',
                 callback: async codeRes => {
-                    setCode(codeRes.code);
+                    // setCode(codeRes.code);
+                    codeRef.current = codeRes.code;
+                    queryClient.invalidateQueries(['session']);
                 },
                 scope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
             }));

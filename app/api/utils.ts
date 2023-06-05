@@ -81,6 +81,7 @@ const getPayload = async (newHeaders: Record<string, string>) => {
 
 export const getSession = async (newHeaders: Record<string, string>): Promise<Session|null> => {
     const code = headers().get('authorization')?.substring(7);
+
     try{
         const payload = await getPayload(newHeaders);
         const sub = payload?.sub;

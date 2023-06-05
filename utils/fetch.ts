@@ -19,12 +19,13 @@ export const domains = {
                     ...init, method: 'post',
                 };
 
+                
                 const body = args;
-
+                
                 reqInit.body = JSON.stringify(body);
-
+                
                 reqInit.headers = {"Cookie": init.cookies?.toString() ?? '', ...reqInit.headers, 'Content-Type': 'application/json'};
-
+                
                 const url = `${baseUrl}/${method}/${path}`;
 
                 const res = await fetch(url, reqInit);
