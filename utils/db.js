@@ -21,7 +21,14 @@ const dbPool = new pg_1.Pool({
     port: parseInt((_a = process.env.DATABASE_PORT) !== null && _a !== void 0 ? _a : ''),
     password: process.env.DATABASE_PASS,
     user: process.env.DATABASE_USER,
-    ssl: { rejectUnauthorized: false },
+    ssl: {
+        host: process.env.SSL_HOST,
+        requestCert: true,
+        ca: process.env.SSL_CA,
+        cert: process.env.SSL_CERT,
+        key: process.env.SSL_KEY,
+        rejectUnauthorized: true
+    },
 });
 exports.db = new kysely_1.Kysely({
     dialect: new kysely_1.PostgresDialect({

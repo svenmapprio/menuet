@@ -39,3 +39,5 @@ next-env.d.ts
 .vscode
 
 socket/init-pm2.json
+
+migrate.sql

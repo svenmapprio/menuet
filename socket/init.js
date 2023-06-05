@@ -43,15 +43,29 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
     console.log('checking online status');
     yield (0, helpers_1.waitUntil)(online, 1000);
     console.log('server is online');
+    console.log(process.env.DATABASE_HOST, process.env.DATABASE_LISTEN_DB, process.env.DATABASE_PORT, process.env.DATABASE_PASS, process.env.DATABASE_USER);
     const pool = new pg_1.Pool({
         host: process.env.DATABASE_HOST,
         database: process.env.DATABASE_LISTEN_DB,
         port: parseInt((_a = process.env.DATABASE_PORT) !== null && _a !== void 0 ? _a : ''),
         password: process.env.DATABASE_PASS,
         user: process.env.DATABASE_USER,
-        ssl: { rejectUnauthorized: false }
+        ssl: {
+            host: process.env.SSL_HOST,
+            requestCert: true,
+            ca: process.env.SSL_CA,
+            cert: process.env.SSL_CERT,
+            key: process.env.SSL_KEY,
+            rejectUnauthorized: true
+        },
     });
     console.log('connecting to database');
+    try {
+        pool.connect();
+    }
+    catch (e) {
+        console.log(e);
+    }
     const client = yield (0, helpers_1.waitUntil)(() => pool.connect());
     console.log('got connection to database');
     yield client.query(`

@@ -19,7 +19,14 @@ const dbPool = new Pool({
     port: parseInt(process.env.DATABASE_PORT ?? ''),
     password: process.env.DATABASE_PASS,
     user: process.env.DATABASE_USER,
-    ssl: {rejectUnauthorized: false},
+    ssl: {
+        host: process.env.SSL_HOST,
+        requestCert: true,
+        ca:process.env.SSL_CA,
+        cert:process.env.SSL_CERT,
+        key:process.env.SSL_KEY,
+        rejectUnauthorized: true
+    },
 });
 
 export const db = new Kysely<DB>({
