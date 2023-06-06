@@ -1,5 +1,6 @@
 'use client';
 
+import Post from "@/components/Post";
 import Spinner from "@/components/Spinner";
 import { domains } from "@/utils/fetch";
 import { GetConversation, GetMessage } from "@/utils/routes";
@@ -68,7 +69,7 @@ const ConversationView: FC<{conversation: GetConversation}> = ({conversation:{co
     };
 
     return <div>
-        <h1>{post.post.name}</h1>
+        <Post.View post={post} />
         <div>messages</div>
         <div>{messages.map(({message, user}) => <MessageView key={message.id} message={{message, user}} />)}</div>
         <div style={{position: 'relative'}}>
