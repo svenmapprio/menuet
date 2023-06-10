@@ -66,16 +66,3 @@ export interface PublicRoutes extends Routes {
         userPost: RouteInfo<{userId: number, postId: number, relation: UserPostRelation}>
     }
 }
-
-// export interface UserRoutes extends Routes {
-//     get: {
-        
-//     },
-//     put: {
-       
-//     }
-//     delete: {
-//         session: RouteInfo,
-//         friend: RouteInfo<{userId: number}>
-//     }
-// }

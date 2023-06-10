@@ -72,7 +72,8 @@ const getTicket = async (idToken: string) => {
 }
 
 const getPayload = async (newHeaders: Record<string, string>) => {
-    const ticket = await getCodeTicket(newHeaders) ?? 
+    const ticket = 
+        await getCodeTicket(newHeaders) ?? 
         await getCookieTicket() ?? 
         await getRefreshTicket(newHeaders);
 

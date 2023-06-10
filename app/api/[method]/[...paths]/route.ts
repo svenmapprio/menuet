@@ -29,7 +29,6 @@ const handler = async (req: NextRequest, { params }: {
         const body = await req.json().catch(() => {}) ?? {};
 
         await checkEmissionConnection();
-    
         if(paths.length !== 1)
             throw new ApiError(ErrorCode.PathNotFound);
     
@@ -42,14 +41,13 @@ const handler = async (req: NextRequest, { params }: {
         const newHeaders: Record<string, string> = {};
 
         const session = await getSession(newHeaders).catch(e => console.log('get session error', e));
-        
         const data = await db.transaction().execute(async trx => {
             const args = {req, headers: newHeaders, trx, session, ...body};
 
             if(typeof guard === 'function')
                 await guard(args);
 
-            return await handler(args);
+            return await handler(args) ?? null;
         });
 
         return NextResponse.json({data}, {status: 200, headers: {
