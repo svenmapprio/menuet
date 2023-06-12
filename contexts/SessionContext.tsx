@@ -62,7 +62,6 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
             setGoogleClient(google.accounts.oauth2.initCodeClient({
                 client_id: '40415257648-lln4524kpreapkqkh8lt18lrachk00sa.apps.googleusercontent.com',
                 callback: async codeRes => {
-                    // setCode(codeRes.code);
                     codeRef.current = codeRes.code;
                     queryClient.invalidateQueries(['session']);
                 },

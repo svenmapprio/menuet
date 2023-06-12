@@ -22,7 +22,7 @@ export type GetMessage = {
 
 export type GetConversation = {
     post: GetPost,
-    conversation: Selectable<Conversation>,
+    conversation: Omit<Selectable<Conversation>, 'latestMessageId'>,
     messages: GetMessage[]
 }
 
@@ -35,6 +35,16 @@ export type GetChat = {
     }[]
 }
 
+export namespace Returns {
+    export type Chats = {
+        user: Pick<Selectable<User>, 'id'|'handle'>,
+        conversation: {
+            post: Selectable<Post>,
+            message?: Pick<Selectable<Message>, 'id' | 'text' | 'created'>
+        }
+    }[]
+}
+
 export interface PublicRoutes extends Routes {
     get: {
         session: RouteInfo<{}, Session | null>,
@@ -43,7 +53,7 @@ export interface PublicRoutes extends Routes {
         posts: RouteInfo<{}, Selectable<Post>[]>,
         post: RouteInfo<{postId: number}, GetPost | undefined>,
         content: RouteInfo<{contentId: number}, GetContent | undefined>,
-        chats: RouteInfo<void, Pick<Selectable<User>, 'id' | 'handle'>[]>,
+        chats: RouteInfo<void, Returns.Chats>,
         chat: RouteInfo<{userId: number}, GetChat>,
         conversation: RouteInfo<{conversationId: number}, GetConversation>
     },

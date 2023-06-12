@@ -26,6 +26,8 @@ export interface Content {
 export interface Conversation {
   id: Generated<number>;
   postId: number;
+  created: Generated<Timestamp>;
+  latestMessageId: number | null;
 }
 
 export interface ConversationUser {
@@ -33,22 +35,15 @@ export interface ConversationUser {
   userId: number;
 }
 
-export interface Event {
-  id: Generated<number>;
-  name: string;
-}
-
 export interface Friend {
   userId: number;
   friendId: number;
 }
 
-export interface Image {
-  contentId: number;
-  top: Generated<number>;
-  left: Generated<number>;
-  width: Generated<number>;
-  height: Generated<number>;
+export interface LatestFriendConversation {
+  userId: number;
+  friendId: number;
+  conversationId: number | null;
 }
 
 export interface Message {
@@ -96,9 +91,8 @@ export interface DB {
   content: Content;
   conversation: Conversation;
   conversationUser: ConversationUser;
-  event: Event;
   friend: Friend;
-  image: Image;
+  latestFriendConversation: LatestFriendConversation;
   message: Message;
   post: Post;
   postContent: PostContent;

@@ -99,18 +99,53 @@ export const routeHandlers: PublicRouteHandlers = {
             return {user, conversations};
         },
         chats: async ({trx, session}) => {
-            return await trx.selectFrom('conversationUser as cua')
-                .innerJoin('conversationUser as cub', 'cub.conversationId', 'cua.conversationId')
-                .innerJoin('user as other', 'other.id', 'cub.userId')
-                .select(['other.id', 'other.handle'])
-                .where('cua.userId', '=', session.user.id)
-                .where('other.id', '<>', session.user.id)
-                .distinct()
-                .execute();
+            const latestConvos = trx.selectFrom('latestFriendConversation as lfc')
+                .innerJoin('conversation', 'conversation.id', 'lfc.conversationId')
+                .select(sq => [
+                    jsonObjectFrom(
+                        sq.selectFrom('user')
+                        .select(['id', 'handle'])
+                        .whereRef('user.id', '=', 'lfc.friendId')
+                    ).as('user'),
+                    jsonObjectFrom(
+                        sq.selectFrom('post')
+                        .select(ssq => [
+                            jsonObjectFrom(
+                                ssq.selectFrom('post as inner')
+                                .select(['post.id', 'post.name', 'post.description', 'post.created'])
+                                .whereRef('inner.id', '=', 'post.id')
+                            ).as('post'),
+                            jsonObjectFrom(
+                                ssq.selectFrom('message')
+                                .select(['message.id', 'message.text', 'message.created'])
+                                .whereRef('message.id', '=', 'conversation.latestMessageId')
+                            ).as('message'),
+                        ])
+                        .whereRef('post.id', '=', 'conversation.postId')
+                    ).as('conversation'),
+                ])
+                .where('lfc.userId', '=', session.user.id)
+
+            return await latestConvos.execute();
+
+            // return await trx.selectFrom('conversationUser as cua')
+            //     .innerJoin('conversationUser as cub', 'cub.conversationId', 'cua.conversationId')
+            //     .innerJoin('user as other', 'other.id', 'cub.userId')
+            //     .innerJoin('latestFriendConversation as lfc', 'lfc.conversationId', 'cua.conversationId')
+            //     .innerJoin('conversation', 'conversation')
+            //     .innerJoin('post', 'post.id', )
+            //     .select(sq => [
+            //         jsonObjectFrom(sq.selectFrom('user').select(['id', 'handle']).whereRef('user.id', '=', 'cua.userId')).as('user'),
+
+            //     ])
+            //     .where('cua.userId', '=', session.user.id)
+            //     .where('other.id', '<>', session.user.id)
+            //     .distinct()
+            //     .execute();
         },
         conversation: async ({conversationId, trx, session}) => {
             const conversation = await trx.selectFrom('conversation')
-                .select(['conversation.id', 'conversation.postId'])
+                .select(['conversation.id', 'conversation.postId', 'conversation.created'])
                 .where('conversation.id', '=', conversationId)
                 .executeTakeFirstOrThrow();
 
@@ -189,11 +224,11 @@ export const routeHandlers: PublicRouteHandlers = {
             const sourceUserId = session.user.id;
             const targetUserId = userId;
 
-            if(targetUserId !== session.user.id){
-                await trx.insertInto('friend').values({friendId: targetUserId, userId: sourceUserId})
-                .onConflict(oc => oc.columns(['friendId', 'userId']).doNothing())
-                .execute();
-            }
+            if(targetUserId === session.user.id) return;
+
+            await trx.insertInto('friend').values({friendId: targetUserId, userId: sourceUserId})
+            .onConflict(oc => oc.columns(['friendId', 'userId']).doNothing())
+            .execute();
 
             pgEmitter.to(targetUserId.toString()).to(sourceUserId.toString()).emit('mutation', 'users');
         },
@@ -201,7 +236,15 @@ export const routeHandlers: PublicRouteHandlers = {
         groupConversation: async ({}) => {},
         groupMember: async ({}) => {},
         message: async ({trx, conversationId, session, text}) => {
-            await trx.insertInto('message').values({text, conversationId, userId: session.user.id}).execute();
+            const insert = await trx.insertInto('message')
+            .values({text, conversationId, userId: session.user.id})
+            .returning('message.id')
+            .executeTakeFirstOrThrow();
+            
+            await trx.updateTable('conversation')
+            .set({latestMessageId: insert.id})
+            .where('conversation.id', '=', conversationId)
+            .execute();
 
             const {userId} = await trx.selectFrom('conversationUser')
                 .select('conversationUser.userId')
@@ -209,7 +252,14 @@ export const routeHandlers: PublicRouteHandlers = {
                 .where('conversationUser.userId', '<>', session.user.id)
                 .executeTakeFirstOrThrow();
 
+            await trx.updateTable('latestFriendConversation')
+                .set({conversationId})
+                .where('userId', '=', session.user.id)
+                .where('friendId', '=', userId)
+                .execute()
+
             pgEmitter.to(userId.toString()).to(session.user.id.toString()).emit('mutation', ['conversation', conversationId]);
+            pgEmitter.to(userId.toString()).to(session.user.id.toString()).emit('mutation', 'chats');
         },
         userPost: async ({trx, session, postId, userId, relation}) => {
             await trx.insertInto('userPost')
@@ -217,7 +267,7 @@ export const routeHandlers: PublicRouteHandlers = {
                 .onConflict(oc => oc.columns(['postId', 'userId', 'relation']).doNothing())
                 .execute();
 
-            const existingConversation = await trx.selectFrom('conversation')
+            let conversation = await trx.selectFrom('conversation')
                 .innerJoin('conversationUser as cua', join => (
                     join
                         .onRef('cua.conversationId', '=', 'conversation.id')
@@ -231,19 +281,26 @@ export const routeHandlers: PublicRouteHandlers = {
                 .select('conversation.id')
                 .where('conversation.postId', '=', postId).executeTakeFirst();
 
-            if(!existingConversation){
-                const newConversation = await trx.insertInto('conversation')
+            if(!conversation){
+                conversation = await trx.insertInto('conversation')
                 .values({postId})
                 .returning('id')
                 .executeTakeFirstOrThrow();
 
                 await trx.insertInto('conversationUser').values([
-                    {conversationId: newConversation.id, userId: session.user.id}, 
-                    {conversationId: newConversation.id, userId},
+                    {conversationId: conversation.id, userId: session.user.id}, 
+                    {conversationId: conversation.id, userId},
                 ])
                 .onConflict(oc => oc.columns(['conversationId', 'userId']).doNothing())
                 .execute();
             }
+
+            const conversationId = conversation.id
+
+            await trx.insertInto('latestFriendConversation')
+                .values({conversationId, friendId: userId, userId: session.user.id})
+                .onConflict(oc => oc.columns(['friendId', 'userId']).doUpdateSet({conversationId}))
+                .execute();
 
             pgEmitter.to(session.user.id.toString()).emit('mutation', ['shareUsers', postId]);
             pgEmitter.to(userId.toString()).to(session.user.id.toString()).emit('mutation', 'chats');

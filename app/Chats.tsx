@@ -3,10 +3,13 @@
 import SessionContext from "@/contexts/SessionContext";
 import SocketContext from "@/contexts/SocketContext";
 import { domains } from "@/utils/fetch";
+import { Returns } from "@/utils/routes";
 import { UsersListItem } from "@/utils/types";
 import Link from "next/link";
 import { FC, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "react-query";
+
+type T = Returns.Chats;
 
 const Component: FC = () => {
     const socketContext = useContext(SocketContext);
@@ -71,8 +74,15 @@ const Component: FC = () => {
             null
         }
         <div>
-            {chatsData.data?.map(c => <div key={c.id}>
-                <Link href={`/chat/${c.id}`}>{c.handle}</Link>
+            {chatsData.data?.map(c => <div key={c.user.id}>
+                <Link href={`/chat/${c.user.id}`}>
+                    <div style={{padding: 10}}>
+                        <div>{c.user.handle}</div>
+                        <div style={{opacity: 0.7}}>{c.conversation.post.name}{
+                            c.conversation.message ? ` - ${c.conversation.message.text}` : ''
+                        }</div>
+                    </div>
+                </Link>
             </div> )}
         </div>
     </>
