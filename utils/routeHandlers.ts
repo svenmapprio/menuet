@@ -117,7 +117,7 @@ export const routeHandlers: PublicRouteHandlers = {
                             ).as('post'),
                             jsonObjectFrom(
                                 ssq.selectFrom('message')
-                                .select(['message.id', 'message.text', 'message.created'])
+                                .select(['message.id', 'message.text', 'message.created', 'message.userId'])
                                 .whereRef('message.id', '=', 'conversation.latestMessageId')
                             ).as('message'),
                         ])

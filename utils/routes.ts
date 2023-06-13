@@ -40,7 +40,7 @@ export namespace Returns {
         user: Pick<Selectable<User>, 'id'|'handle'>,
         conversation: {
             post: Selectable<Post>,
-            message?: Pick<Selectable<Message>, 'id' | 'text' | 'created'>
+            message?: Pick<Selectable<Message>, 'id' | 'text' | 'created' | 'userId'>
         }
     }[]
 }
