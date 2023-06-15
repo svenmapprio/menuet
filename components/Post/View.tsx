@@ -36,7 +36,7 @@ const Component: FC<PropsWithChildren<{post: Returns.PostDetails}>> = ({children
             <div>Conversations</div>
             <div style={{display: 'flex'}}>
                 {
-                    conversations.map(c => <Link href={`/post/view/${post.id}/conversation/${c.id}`}>{c.user.handle}</Link>)
+                    conversations.map(c => <Link key={c.id} href={`/post/view/${post.id}/conversation/${c.id}`}>{c.user.handle}</Link>)
                 }
             </div>
         </div>
