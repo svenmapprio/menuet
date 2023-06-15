@@ -4,12 +4,6 @@ import { RouteInfo, Routes, Session, UsersListItem, UsersFilter, ShareUsersListI
 
 export type GetContent = Pick<Selectable<Content>, 'name'|'id'>;
 
-export type GetPost = {
-    post: Selectable<Post>,
-    content: GetContent[],
-    relations: UserPostRelation[]
-}
-
 export type PutPost = {
     post: Insertable<Post>,
     content: GetContent[]
@@ -20,22 +14,16 @@ export type GetMessage = {
     user: Pick<Selectable<User>, 'id' | 'handle'>,
 }
 
-export type GetConversation = {
-    post: GetPost,
-    conversation: Omit<Selectable<Conversation>, 'latestMessageId'>,
-    messages: GetMessage[]
-}
-
-export type GetChat = {
-    user: Pick<Selectable<User>, 'id'|'handle'>,
-    conversations: {
-        conversation: Pick<Selectable<Conversation>, 'id'>
-        post: Selectable<Post>,
-        content: {name: string}[],
-    }[]
-}
-
 export namespace Returns {
+    export type ChatDetails = {
+        user: Pick<Selectable<User>, 'id'|'handle'>,
+        conversations: {
+            conversation: Pick<Selectable<Conversation>, 'id'>
+            post: Selectable<Post>,
+            content: {name: string}[],
+        }[]
+    }
+
     export type Chats = {
         user: Pick<Selectable<User>, 'id'|'handle'>,
         conversation: {
@@ -43,6 +31,21 @@ export namespace Returns {
             message?: Pick<Selectable<Message>, 'id' | 'text' | 'created' | 'userId'>
         }
     }[]
+
+    export type ConversationDetails = {
+        conversation: Omit<Selectable<Conversation>, 'latestMessageId'>,
+        messages: GetMessage[]
+    }
+
+    export type PostDetails = {
+        post: Selectable<Post>,
+        content: GetContent[],
+        relations: {relation: UserPostRelation}[],
+        conversations: {
+            id: number,
+            user: Pick<Selectable<User>, 'id' | 'handle'>
+        }[]
+    }
 }
 
 export interface PublicRoutes extends Routes {
@@ -51,11 +54,11 @@ export interface PublicRoutes extends Routes {
         users: RouteInfo<{filter?: UsersFilter}, UsersListItem[]>,
         shareUsers: RouteInfo<{postId: number}, ShareUsersListItem[]>
         posts: RouteInfo<{}, Selectable<Post>[]>,
-        post: RouteInfo<{postId: number}, GetPost | undefined>,
+        post: RouteInfo<{postId: number}, Returns.PostDetails | undefined>,
         content: RouteInfo<{contentId: number}, GetContent | undefined>,
         chats: RouteInfo<void, Returns.Chats>,
-        chat: RouteInfo<{userId: number}, GetChat>,
-        conversation: RouteInfo<{conversationId: number}, GetConversation>
+        chat: RouteInfo<{userId: number}, Returns.ChatDetails>,
+        conversation: RouteInfo<{conversationId: number}, Returns.ConversationDetails>
     },
     delete:{
         session: RouteInfo,

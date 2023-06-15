@@ -15,6 +15,7 @@ const pg_1 = require("pg");
 const postgres_emitter_1 = require("@socket.io/postgres-emitter");
 const kysely_1 = require("kysely");
 const headers_1 = require("next/headers");
+const postgres_1 = require("kysely/helpers/postgres");
 const dbPool = new pg_1.Pool({
     host: process.env.DATABASE_HOST,
     database: process.env.DATABASE_DB,
@@ -112,22 +113,69 @@ exports.dbCommon = {
         return q.execute();
     },
     getPost: (trx, postId, userId) => __awaiter(void 0, void 0, void 0, function* () {
-        const post = yield trx
-            .selectFrom('post')
-            .select(['post.id', 'post.name', 'post.description', 'post.created'])
-            .where('id', '=', postId)
+        const details = yield trx.selectFrom('post as outer')
+            .select(sq => [
+            //#region post
+            (0, postgres_1.jsonObjectFrom)(sq.selectFrom('post')
+                .select(['post.name', 'post.id', 'post.created', 'post.description'])
+                .whereRef('post.id', '=', 'outer.id')).as('post'),
+            //#endregion post
+            //#region relations
+            (0, postgres_1.jsonArrayFrom)(sq.selectFrom('userPost')
+                .select('relation')
+                .whereRef('userPost.postId', '=', 'outer.id')
+                .where('userPost.userId', '=', userId)).as('relations'),
+            //#endregion relations
+            //#region content
+            (0, postgres_1.jsonArrayFrom)(sq.selectFrom('postContent')
+                .innerJoin('content', 'content.id', 'postContent.contentId')
+                .select(['content.id', 'content.name'])
+                .whereRef('postContent.postId', '=', 'outer.id')).as('content'),
+            //#endregion content
+            //#region conversations
+            (0, postgres_1.jsonArrayFrom)(sq.selectFrom('conversation as conversationOuter')
+                .innerJoin('conversationUser', 'conversationUser.conversationId', 'conversationOuter.id')
+                .select(ssq => [
+                'conversationOuter.id',
+                //#region conversations.user
+                (0, postgres_1.jsonObjectFrom)(ssq.selectFrom('conversationUser')
+                    .innerJoin('user', 'user.id', 'conversationUser.userId')
+                    .select(['user.id', 'user.handle'])
+                    .where('conversationUser.userId', '<>', userId)
+                    .whereRef('conversationUser.conversationId', '=', 'conversationOuter.id')).as('user')
+                //#endregion conversations.user
+            ])
+                .whereRef('conversationOuter.postId', '=', 'outer.id')
+                .where('conversationUser.userId', '=', userId)).as('conversations')
+            //#endregion conversations
+        ])
+            .where('outer.id', '=', postId)
             .executeTakeFirstOrThrow();
-        const relations = yield trx.selectFrom('userPost')
-            .select('relation')
-            .where('userId', '=', userId)
-            .where('postId', '=', postId)
-            .execute();
-        const content = yield trx.selectFrom('postContent')
-            .innerJoin('content', 'content.id', 'postContent.contentId')
-            .select(['content.id', 'content.name'])
-            .where('postContent.postId', '=', postId)
-            .execute();
-        return { post, relations: relations.map(r => r.relation), content };
+        /*
+         //#region conversations.messages
+                    jsonArrayFrom(
+                        ssq.selectFrom('message as messageOuter')
+                        .select(sssq => [
+                            //#region conversations.messages.message
+                            jsonObjectFrom(
+                                sssq.selectFrom('message')
+                                .select(['message.id', 'message.text', 'message.created', 'message.userId', 'message.conversationId'])
+                                .whereRef('message.id', '=', 'messageOuter.id')
+                            ).as('message'),
+                            //#endregion conversations.messages.message
+                            //#region conversations.messages.user
+                            jsonObjectFrom(
+                                sssq.selectFrom('user')
+                                .select(['user.id', 'user.handle'])
+                                .whereRef('user.id', '=', 'messageOuter.userId')
+                            ).as('user'),
+                            //#endregion conversations.messages.user
+                        ])
+                        .whereRef('messageOuter.conversationId', '=', 'conversationOuter.id')
+                    ).as('messages')
+                    //#endregion conversations.messages
+         */
+        return details;
     })
 };
 var ErrorCode;

@@ -2,15 +2,15 @@
 
 import Spinner from "@/components/Spinner";
 import { domains } from "@/utils/fetch";
-import { GetChat } from "@/utils/routes";
+import { Returns } from "@/utils/routes";
 import Link from "next/link";
 import { FC } from "react";
 import { useQuery } from "react-query";
 
-const ChatView: FC<{chat: GetChat}> = ({chat: {conversations, user}}) => {
+const ChatView: FC<{chat: Returns.ChatDetails}> = ({chat: {conversations, user}}) => {
     return <div>
         <h1>Your chat with {user.handle}</h1>
-        {conversations.map(c => <div key={c.post.id}><Link href={`/conversation/${c.conversation.id}`}>{c.post.name}</Link> </div>)}
+        {conversations.map(c => <div key={c.post.id}><Link href={`/post/view/${c.post.id}/conversation/${c.conversation.id}`}>{c.post.name}</Link> </div>)}
     </div>
 }
 

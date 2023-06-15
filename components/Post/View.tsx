@@ -1,11 +1,11 @@
 'use client';
 
-import { GetContent, GetPost } from "@/utils/routes";
+import { GetContent, Returns } from "@/utils/routes";
 import { Post, UserPostRelation } from "@/utils/tables";
 import { Selectable } from "kysely";
 import Link from "next/link";
 import Image from "next/image";
-import { FC } from "react";
+import { FC, PropsWithChildren } from "react";
 
 const ContentView: FC<{content: GetContent}> = ({content: {name, id}}) => {
     const src = `https://menuet.ams3.cdn.digitaloceanspaces.com/content/${name}-200-200.webp`;
@@ -13,10 +13,10 @@ const ContentView: FC<{content: GetContent}> = ({content: {name, id}}) => {
     return <Image src={src} alt={'Preview of selected image'} height={200} width={200} style={{objectFit: 'cover'}} />;
 }
 
-const Component: FC<{post: GetPost}> = ({post: {post, content, relations}}) => {
-    const isOwner = !!relations.find(r => r === 'owner');
-    const isCreator = !!relations.find(r => r === 'creator');
-    const isConsumer = !!relations.find(r => r === 'consumer');
+const Component: FC<PropsWithChildren<{post: Returns.PostDetails}>> = ({children, post: {post, content, relations, conversations}}) => {
+    const isOwner = !!relations.find(r => r.relation === 'owner');
+    const isCreator = !!relations.find(r => r.relation === 'creator');
+    const isConsumer = !!relations.find(r => r.relation === 'consumer');
 
     return <>
         <div style={{display: 'flex', flexWrap: 'wrap'}}>
@@ -32,6 +32,15 @@ const Component: FC<{post: GetPost}> = ({post: {post, content, relations}}) => {
                 <Link href={`/post/share/${post.id}`}>Share</Link>
             </>
         }
+        <div>
+            <div>Conversations</div>
+            <div style={{display: 'flex'}}>
+                {
+                    conversations.map(c => <Link href={`/post/view/${post.id}/conversation/${c.id}`}>{c.user.handle}</Link>)
+                }
+            </div>
+        </div>
+        {children}
     </>;
 }
 

@@ -1,6 +1,6 @@
 import {Selectable, sql} from 'kysely';
 import { jsonBuildObject, jsonObjectFrom } from 'kysely/helpers/postgres';
-import { GetConversation, GetPost, PublicRoutes, PutPost, } from "./routes";
+import { PublicRoutes, PutPost, } from "./routes";
 import { RouteHandlers } from "./types";
 import { dbCommon, pgEmitter } from './db';
 import { Post } from './tables';
@@ -149,7 +149,7 @@ export const routeHandlers: PublicRouteHandlers = {
                 .where('conversation.id', '=', conversationId)
                 .executeTakeFirstOrThrow();
 
-            const post = await dbCommon.getPost(trx, conversation.postId, session.user.id);
+            //const post = await dbCommon.getPost(trx, conversation.postId, session.user.id);
 
             const messages = await trx.selectFrom('message as outer')
                 .select(sq => [
@@ -167,7 +167,7 @@ export const routeHandlers: PublicRouteHandlers = {
                 .where('outer.conversationId', '=', conversationId)
                 .execute();
 
-            return {conversation,messages,post};
+            return {conversation,messages};
         }
     },
     put: {
