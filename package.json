@@ -21,6 +21,7 @@
     "@types/react": "18.0.28",
     "@types/react-dom": "18.0.10",
     "@types/webrtc": "^0.0.33",
+    "apple-signin-auth": "^1.7.5",
     "aws-crt": "^1.15.16",
     "aws-sdk": "^2.1378.0",
     "axios": "^1.3.4",

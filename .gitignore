@@ -41,3 +41,5 @@ next-env.d.ts
 socket/init-pm2.json
 
 migrate.sql
+
+*.p8

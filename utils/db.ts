@@ -14,6 +14,7 @@ import { DB } from './tables';
 import { cookies } from 'next/headers';
 import { jsonArrayFrom, jsonObjectFrom } from 'kysely/helpers/postgres';
 import { Returns } from './routes';
+import { AppleIdTokenType } from 'apple-signin-auth'
 
 const dbPool = new Pool({
     host: process.env.DATABASE_HOST,
@@ -67,17 +68,21 @@ export const dbCommon = {
 
         return sessionFlat ? {account: {sub, email: sessionFlat.email, type: sessionFlat.type},user: {handle: sessionFlat.handle, id:  sessionFlat.id, name:sessionFlat.name, firstName: sessionFlat.firstName, lastName: sessionFlat.lastName}} : null;
     },
-    getOrPutSession: async (trx: Transaction<DB>, {sub, google}: {sub: string, google?: TokenPayload}): Promise<Session|null> => {
+    getOrPutSession: async (trx: Transaction<DB>, {sub, google, apple}: {sub: string, apple?: AppleIdTokenType, google?: TokenPayload}): Promise<Session|null> => {
         let session = await dbCommon.getSessionBy(trx, {sub});
 
-        if(!session && google){
+        if(!session && (google || apple)){
+            const firstName = google?.given_name ?? '';
+            const lastName = google?.family_name ?? null;
+            const email = google?.email ?? apple?.email;
+
             const {id: userId} = await trx.insertInto('user')
-                .values({handle: '', firstName: google.given_name ?? '', lastName: google.family_name ?? null})
+                .values({handle: '', firstName, lastName})
                 .returning('user.id')
                 .executeTakeFirstOrThrow();
 
             await trx.insertInto('account')
-                .values({sub, type: 'google', userId, email: google.email})
+                .values({sub, type: 'google', userId, email})
                 .execute();
 
             session = await dbCommon.getSessionBy(trx, {sub});

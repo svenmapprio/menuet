@@ -62,16 +62,19 @@ exports.dbCommon = {
             .executeTakeFirst();
         return sessionFlat ? { account: { sub, email: sessionFlat.email, type: sessionFlat.type }, user: { handle: sessionFlat.handle, id: sessionFlat.id, name: sessionFlat.name, firstName: sessionFlat.firstName, lastName: sessionFlat.lastName } } : null;
     }),
-    getOrPutSession: (trx, { sub, google }) => __awaiter(void 0, void 0, void 0, function* () {
-        var _b, _c;
+    getOrPutSession: (trx, { sub, google, apple }) => __awaiter(void 0, void 0, void 0, function* () {
+        var _b, _c, _d;
         let session = yield exports.dbCommon.getSessionBy(trx, { sub });
-        if (!session && google) {
+        if (!session && (google || apple)) {
+            const firstName = (_b = google === null || google === void 0 ? void 0 : google.given_name) !== null && _b !== void 0 ? _b : '';
+            const lastName = (_c = google === null || google === void 0 ? void 0 : google.family_name) !== null && _c !== void 0 ? _c : null;
+            const email = (_d = google === null || google === void 0 ? void 0 : google.email) !== null && _d !== void 0 ? _d : apple === null || apple === void 0 ? void 0 : apple.email;
             const { id: userId } = yield trx.insertInto('user')
-                .values({ handle: '', firstName: (_b = google.given_name) !== null && _b !== void 0 ? _b : '', lastName: (_c = google.family_name) !== null && _c !== void 0 ? _c : null })
+                .values({ handle: '', firstName, lastName })
                 .returning('user.id')
                 .executeTakeFirstOrThrow();
             yield trx.insertInto('account')
-                .values({ sub, type: 'google', userId, email: google.email })
+                .values({ sub, type: 'google', userId, email })
                 .execute();
             session = yield exports.dbCommon.getSessionBy(trx, { sub });
         }

@@ -61,8 +61,11 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
         if(typeof google !== "undefined" && !googleClient){
             setGoogleClient(google.accounts.oauth2.initCodeClient({
                 client_id: '40415257648-lln4524kpreapkqkh8lt18lrachk00sa.apps.googleusercontent.com',
+                error_callback: async error => {
+                    console.log('sign in error', error);
+                },
                 callback: async codeRes => {
-                    codeRef.current = codeRes.code;
+                    codeRef.current = `google:${codeRes.code}`;
                     queryClient.invalidateQueries(['session']);
                 },
                 scope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"

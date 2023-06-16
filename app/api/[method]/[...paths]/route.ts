@@ -26,6 +26,7 @@ const handler = async (req: NextRequest, { params }: {
     try{
         const {paths, method} = params;
         const path = paths[0];
+        const auth = paths[1];
         const body = await req.json().catch(() => {}) ?? {};
 
         await checkEmissionConnection();
