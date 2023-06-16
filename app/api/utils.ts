@@ -13,7 +13,7 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, sc
 let _appleClientSecrect: string | null = null;
 const appleClientSecret = () => {
     console.log(!!process.env.APPLE_BUNDLE_ID, !!process.env.APPLE_TEAM_ID, !!process.env.APPLE_PRIVATE_KEY, !!process.env.APPLE_PRIVATE_KEY_ID);
-    
+
     return _appleClientSecrect ?? (_appleClientSecrect = appleSignin.getClientSecret({
         clientID: process.env.APPLE_BUNDLE_ID!, 
         teamID: process.env.APPLE_TEAM_ID!, 
@@ -58,10 +58,12 @@ const apple = {
         try{
             const tokenResponse = await appleSignin.getAuthorizationToken(code, appleOptions());
 
-            setRefreshTokenCookie(newHeaders, tokenResponse.refresh_token, 'apple');
-    
             const idToken = tokenResponse.id_token;
 
+            if(!idToken) throw tokenResponse;
+
+            setRefreshTokenCookie(newHeaders, tokenResponse.refresh_token, 'apple');
+    
             console.log('tokenResponse', tokenResponse);
 
             return apple.getPayload(idToken);
@@ -149,6 +151,12 @@ const google = {
     },
 }
 
+const testProvider = (str: string, provider: 'apple' | 'google') => {
+    if(!str.startsWith(provider)) return null;
+
+    return [provider, str.replace(provider, '')];
+}
+
 const wrap = {
     getCodePayload: async (newHeaders: Record<string, string>) => {
         const codeAndProvider = headers().get('authorization')?.substring(7);
@@ -157,7 +165,9 @@ const wrap = {
 
         if(!codeAndProvider) return;
 
-        const [provider, code] = codeAndProvider.split(/:(.*)/);
+        const [provider, code] = 
+            testProvider(codeAndProvider, 'apple') ?? 
+            testProvider(codeAndProvider, 'google') ?? [];
 
         if(!code) return;
 
@@ -179,7 +189,9 @@ const wrap = {
 
         if(!refreshTokenAndProvider) return null;
 
-        const [provider, refreshToken] = refreshTokenAndProvider.split(/:(.*)/);
+        const [provider, refreshToken] = 
+            testProvider(refreshTokenAndProvider, 'apple') ?? 
+            testProvider(refreshTokenAndProvider, 'google') ?? [];
 
         if(!refreshToken) return null;
 
@@ -209,7 +221,7 @@ const wrap = {
 }
 
 const setRefreshTokenCookie = (newHeaders: Record<string, string>, refreshToken: string, provider?: 'apple' | 'google') => {
-    const token = provider && refreshToken ? `${provider}:${refreshToken}` : '';
+    const token = provider && refreshToken ? `${provider}${refreshToken}` : '';
 
     newHeaders['Set-Cookie'] = `refresh_token=${token};Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=99999999;`;
 
