@@ -12,6 +12,8 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, sc
 
 let _appleClientSecrect: string | null = null;
 const appleClientSecret = () => {
+    console.log(!!process.env.APPLE_BUNDLE_ID, !!process.env.APPLE_TEAM_ID, !!process.env.APPLE_PRIVATE_KEY, !!process.env.APPLE_PRIVATE_KEY_ID);
+    
     return _appleClientSecrect ?? (_appleClientSecrect = appleSignin.getClientSecret({
         clientID: process.env.APPLE_BUNDLE_ID!, 
         teamID: process.env.APPLE_TEAM_ID!, 
