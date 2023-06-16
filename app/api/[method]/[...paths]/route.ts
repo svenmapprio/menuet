@@ -42,9 +42,8 @@ const handler = async (req: NextRequest, { params }: {
 
         const newHeaders: Record<string, string> = {};
 
-        console.log("cookies", cookies());
-
         const session = await getSession(newHeaders).catch(e => console.log('get session error', e));
+
         const data = await db.transaction().execute(async trx => {
             const args = {req, headers: newHeaders, trx, session, ...body};
 

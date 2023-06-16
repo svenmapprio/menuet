@@ -12,8 +12,6 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, sc
 
 let _appleClientSecrect: string | null = null;
 const appleClientSecret = () => {
-    console.log(!!process.env.APPLE_BUNDLE_ID, !!process.env.APPLE_TEAM_ID, !!process.env.APPLE_PRIVATE_KEY, !!process.env.APPLE_PRIVATE_KEY_ID);
-
     return _appleClientSecrect ?? (_appleClientSecrect = appleSignin.getClientSecret({
         clientID: process.env.APPLE_BUNDLE_ID!, 
         teamID: process.env.APPLE_TEAM_ID!, 
@@ -23,6 +21,8 @@ const appleClientSecret = () => {
 }
 let _appleOptions: {clientID: string, clientSecret: string, redirectUri: string} | null = null   
 const appleOptions = () => {
+    console.log(process.env.APPLE_BUNDLE_ID, process.env.APPLE_TEAM_ID, process.env.APPLE_PRIVATE_KEY, process.env.APPLE_PRIVATE_KEY_ID);
+
     return _appleOptions ?? ( _appleOptions = {
         clientID: process.env.APPLE_BUNDLE_ID!,  
         redirectUri: 'https://menuet.city',
@@ -63,8 +63,6 @@ const apple = {
             if(!idToken) throw tokenResponse;
 
             setRefreshTokenCookie(newHeaders, tokenResponse.refresh_token, 'apple');
-    
-            console.log('tokenResponse', tokenResponse);
 
             return apple.getPayload(idToken);
         }
@@ -88,10 +86,10 @@ const apple = {
         try {
             const payload = await appleSignin.verifyIdToken(idToken, {
               // Optional Options for further verification - Full list can be found here https://github.com/auth0/node-jsonwebtoken#jwtverifytoken-secretorpublickey-options-callback
-              audience: process.env.APPLE_BUNDLE_ID!, // client id - can also be an array
+              //audience: process.env.APPLE_BUNDLE_ID!, // client id - can also be an array
               //nonce: 'NONCE', // nonce // Check this note if coming from React Native AS RN automatically SHA256-hashes the nonce https://github.com/invertase/react-native-apple-authentication#nonce
               // If you want to handle expiration on your own, or if you want the expired tokens decoded
-              ignoreExpiration: true, // default is false
+              //ignoreExpiration: true, // default is false
             });
 
             return {apple: payload};
@@ -161,8 +159,6 @@ const wrap = {
     getCodePayload: async (newHeaders: Record<string, string>) => {
         const codeAndProvider = headers().get('authorization')?.substring(7);
 
-        console.log('trying code', 'isset:', !!codeAndProvider);
-
         if(!codeAndProvider) return;
 
         const [provider, code] = 
@@ -170,8 +166,6 @@ const wrap = {
             testProvider(codeAndProvider, 'google') ?? [];
 
         if(!code) return;
-
-        console.log('got code', code);
 
         const payload = 
             provider === 'apple' 
@@ -184,8 +178,6 @@ const wrap = {
     },
     getRefreshPayload: async (newHeaders: Record<string, string>) => {
         const refreshTokenAndProvider = cookies().get('refresh_token')?.value;
-
-        console.log('trying refreshtoken', 'isset:', !!refreshTokenAndProvider);
 
         if(!refreshTokenAndProvider) return null;
 
@@ -224,6 +216,4 @@ const setRefreshTokenCookie = (newHeaders: Record<string, string>, refreshToken:
     const token = provider && refreshToken ? `${provider}${refreshToken}` : '';
 
     newHeaders['Set-Cookie'] = `refresh_token=${token};Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=99999999;`;
-
-    console.log(newHeaders['Set-Cookie']);
 }

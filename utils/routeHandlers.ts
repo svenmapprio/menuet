@@ -124,7 +124,7 @@ export const routeHandlers: PublicRouteHandlers = {
                         .whereRef('post.id', '=', 'conversation.postId')
                     ).as('conversation'),
                 ])
-                .where('lfc.userId', '=', session.user.id)
+                .where('lfc.userId', '=', session.user.id);
 
             return await latestConvos.execute();
 
@@ -215,7 +215,11 @@ export const routeHandlers: PublicRouteHandlers = {
             return insert;
         },
         user: async ({session, trx, user}) => {
-            await trx.updateTable("user").set({...user}).where("id", "=", session.user.id).execute();
+            if(!Object.keys(user).length)
+                return;
+            const q = trx.updateTable("user").set({...user}).where("id", "=", session.user.id);
+
+            await q.execute();
 
             pgEmitter.to(session.user.id.toString()).emit('mutation', 'session');
         },

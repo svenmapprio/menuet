@@ -60,10 +60,12 @@ export const emitServer = (emission: Emission) => {
 
 export const dbCommon = {
     getSessionBy: async (trx: Transaction<DB>, {sub}: {sub: string}): Promise<Session|null> => {
-        const sessionFlat = await trx.selectFrom('account')
-                .innerJoin('user', 'user.id', 'account.userId')
-                .select(['user.handle', 'user.id', 'user.name', 'user.firstName', 'user.lastName', 'account.email', 'account.sub', 'account.type', 'account.userId'])
-                .where('account.sub', '=', sub)
+        const q = trx.selectFrom('account')
+        .innerJoin('user', 'user.id', 'account.userId')
+        .select(['user.handle', 'user.id', 'user.name', 'user.firstName', 'user.lastName', 'account.email', 'account.sub', 'account.type', 'account.userId'])
+        .where('account.sub', '=', sub);
+
+        const sessionFlat = await q
                 .executeTakeFirst();
 
         return sessionFlat ? {account: {sub, email: sessionFlat.email, type: sessionFlat.type},user: {handle: sessionFlat.handle, id:  sessionFlat.id, name:sessionFlat.name, firstName: sessionFlat.firstName, lastName: sessionFlat.lastName}} : null;

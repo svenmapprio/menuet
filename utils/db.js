@@ -55,10 +55,11 @@ const emitServer = (emission) => {
 exports.emitServer = emitServer;
 exports.dbCommon = {
     getSessionBy: (trx, { sub }) => __awaiter(void 0, void 0, void 0, function* () {
-        const sessionFlat = yield trx.selectFrom('account')
+        const q = trx.selectFrom('account')
             .innerJoin('user', 'user.id', 'account.userId')
             .select(['user.handle', 'user.id', 'user.name', 'user.firstName', 'user.lastName', 'account.email', 'account.sub', 'account.type', 'account.userId'])
-            .where('account.sub', '=', sub)
+            .where('account.sub', '=', sub);
+        const sessionFlat = yield q
             .executeTakeFirst();
         return sessionFlat ? { account: { sub, email: sessionFlat.email, type: sessionFlat.type }, user: { handle: sessionFlat.handle, id: sessionFlat.id, name: sessionFlat.name, firstName: sessionFlat.firstName, lastName: sessionFlat.lastName } } : null;
     }),

@@ -65,7 +65,7 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({children}) => {
                     console.log('sign in error', error);
                 },
                 callback: async codeRes => {
-                    codeRef.current = `google:${codeRes.code}`;
+                    codeRef.current = `google${codeRes.code}`;
                     queryClient.invalidateQueries(['session']);
                 },
                 scope: "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile"
