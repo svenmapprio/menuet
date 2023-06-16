@@ -10,17 +10,22 @@ const scope = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' :
 
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, scope);
 
-const clientSecret = appleSignin.getClientSecret({
-    clientID: process.env.APPLE_BUNDLE_ID!, 
-    teamID: process.env.APPLE_TEAM_ID!, 
-    privateKey: process.env.APPLE_PRIVATE_KEY!, 
-    keyIdentifier: process.env.APPLE_PRIVATE_KEY_ID!,
-});
-  
-const options = {
-    clientID: process.env.APPLE_BUNDLE_ID!,  
-    redirectUri: 'https://menuet.city', 
-    clientSecret: clientSecret
+let _appleClientSecrect: string | null = null;
+const appleClientSecret = () => {
+    return _appleClientSecrect ?? (_appleClientSecrect = appleSignin.getClientSecret({
+        clientID: process.env.APPLE_BUNDLE_ID!, 
+        teamID: process.env.APPLE_TEAM_ID!, 
+        privateKey: process.env.APPLE_PRIVATE_KEY!, 
+        keyIdentifier: process.env.APPLE_PRIVATE_KEY_ID!,
+    }));
+}
+let _appleOptions: {clientID: string, clientSecret: string, redirectUri: string} | null = null   
+const appleOptions = () => {
+    return _appleOptions ?? ( _appleOptions = {
+        clientID: process.env.APPLE_BUNDLE_ID!,  
+        redirectUri: 'https://menuet.city', 
+        clientSecret: appleClientSecret()
+    })
 };
 
 export const getSession = async (newHeaders: Record<string, string>): Promise<Session|null> => {
@@ -49,7 +54,7 @@ export const getSession = async (newHeaders: Record<string, string>): Promise<Se
 const apple = {
     handleCode: async (code: string, newHeaders: Record<string, string>) => {
         try{
-            const tokenResponse = await appleSignin.getAuthorizationToken(code, options);
+            const tokenResponse = await appleSignin.getAuthorizationToken(code, appleOptions());
 
             setRefreshTokenCookie(newHeaders, tokenResponse.refresh_token, 'apple');
     
@@ -65,7 +70,7 @@ const apple = {
     },
     handleRefreshToken: async (refreshToken: string) => {
         try {
-            const tokens = await appleSignin.refreshAuthorizationToken(refreshToken, options);
+            const tokens = await appleSignin.refreshAuthorizationToken(refreshToken, appleOptions());
             
             return apple.getPayload(tokens.id_token);
           } catch (err) {
