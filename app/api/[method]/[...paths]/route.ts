@@ -6,6 +6,7 @@ import { waitUntil } from "@/utils/helpers";
 import { routeHandlers } from "@/utils/routeHandlers";
 import guards from "@/utils/guards";
 import { getSession } from "../../utils";
+import { cookies } from "next/headers";
 
 const checkEmissionConnection = async () => {
     const socketServerConnected = async () => {
@@ -40,6 +41,8 @@ const handler = async (req: NextRequest, { params }: {
             throw new ApiError(ErrorCode.HandlerNotFound);
 
         const newHeaders: Record<string, string> = {};
+
+        console.log("cookies", cookies());
 
         const session = await getSession(newHeaders).catch(e => console.log('get session error', e));
         const data = await db.transaction().execute(async trx => {

@@ -75,6 +75,7 @@ export const dbCommon = {
             const firstName = google?.given_name ?? '';
             const lastName = google?.family_name ?? null;
             const email = google?.email ?? apple?.email;
+            const type = google ? 'google' : apple ? 'apple' : '';
 
             const {id: userId} = await trx.insertInto('user')
                 .values({handle: '', firstName, lastName})
@@ -82,7 +83,7 @@ export const dbCommon = {
                 .executeTakeFirstOrThrow();
 
             await trx.insertInto('account')
-                .values({sub, type: 'google', userId, email})
+                .values({sub, type, userId, email})
                 .execute();
 
             session = await dbCommon.getSessionBy(trx, {sub});

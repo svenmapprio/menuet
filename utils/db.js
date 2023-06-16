@@ -69,12 +69,13 @@ exports.dbCommon = {
             const firstName = (_b = google === null || google === void 0 ? void 0 : google.given_name) !== null && _b !== void 0 ? _b : '';
             const lastName = (_c = google === null || google === void 0 ? void 0 : google.family_name) !== null && _c !== void 0 ? _c : null;
             const email = (_d = google === null || google === void 0 ? void 0 : google.email) !== null && _d !== void 0 ? _d : apple === null || apple === void 0 ? void 0 : apple.email;
+            const type = google ? 'google' : apple ? 'apple' : '';
             const { id: userId } = yield trx.insertInto('user')
                 .values({ handle: '', firstName, lastName })
                 .returning('user.id')
                 .executeTakeFirstOrThrow();
             yield trx.insertInto('account')
-                .values({ sub, type: 'google', userId, email })
+                .values({ sub, type, userId, email })
                 .execute();
             session = yield exports.dbCommon.getSessionBy(trx, { sub });
         }

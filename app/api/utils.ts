@@ -23,7 +23,7 @@ let _appleOptions: {clientID: string, clientSecret: string, redirectUri: string}
 const appleOptions = () => {
     return _appleOptions ?? ( _appleOptions = {
         clientID: process.env.APPLE_BUNDLE_ID!,  
-        redirectUri: 'https://menuet.city', 
+        redirectUri: 'https://menuet.city',
         clientSecret: appleClientSecret()
     })
 };
@@ -60,6 +60,8 @@ const apple = {
     
             const idToken = tokenResponse.id_token;
 
+            console.log('tokenResponse', tokenResponse);
+
             return apple.getPayload(idToken);
         }
         catch(err){
@@ -91,7 +93,7 @@ const apple = {
             return {apple: payload};
         } catch (err) {
             // Token is not verified
-            console.log(err);
+            console.log(err, idToken);
 
             return null;
         }
@@ -149,9 +151,15 @@ const wrap = {
     getCodePayload: async (newHeaders: Record<string, string>) => {
         const codeAndProvider = headers().get('authorization')?.substring(7);
 
+        console.log('trying code', 'isset:', !!codeAndProvider);
+
         if(!codeAndProvider) return;
 
         const [provider, code] = codeAndProvider.split(/:(.*)/);
+
+        if(!code) return;
+
+        console.log('got code', code);
 
         const payload = 
             provider === 'apple' 
@@ -165,9 +173,13 @@ const wrap = {
     getRefreshPayload: async (newHeaders: Record<string, string>) => {
         const refreshTokenAndProvider = cookies().get('refresh_token')?.value;
 
+        console.log('trying refreshtoken', 'isset:', !!refreshTokenAndProvider);
+
         if(!refreshTokenAndProvider) return null;
 
         const [provider, refreshToken] = refreshTokenAndProvider.split(/:(.*)/);
+
+        if(!refreshToken) return null;
 
         try{
             const payload = 
@@ -197,5 +209,7 @@ const wrap = {
 const setRefreshTokenCookie = (newHeaders: Record<string, string>, refreshToken: string, provider?: 'apple' | 'google') => {
     const token = provider && refreshToken ? `${provider}:${refreshToken}` : '';
 
-    newHeaders['Set-Cookie'] = `refresh_token=${token};Secure; HttpOnly; SameSite=None; Path=/; Max-Age=99999999;`;
+    newHeaders['Set-Cookie'] = `refresh_token=${token};Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=99999999;`;
+
+    console.log(newHeaders['Set-Cookie']);
 }
