@@ -3,6 +3,8 @@ import { Session } from "@/utils/types";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import appleSignin, { AppleIdTokenType } from 'apple-signin-auth';
 import { cookies, headers } from "next/headers";
+import * as jose from 'jose';
+import { createECDH, generateKey, KeyObject } from "crypto";
 
 type JWKSet = {
     alg: string,
@@ -13,6 +15,24 @@ type JWKSet = {
     use: string,
 }
 
+const buildSecret = async () => {
+    const jwt = new jose.SignJWT({
+        'iat': Date.now() / 1000,
+		'exp': Date.now() / 1000 + 3600,
+		'iss': process.env.APPLE_TEAM_ID!,
+		'aud': 'https://appleid.apple.com',
+		'sub': process.env.APPLE_BUNDLE_ID!,
+    });
+
+    const appleKey = process.env.APPLE_PRIVATE_KEY!;
+
+    jwt.setProtectedHeader({alg: 'ES256', kid: process.env.APPLE_PRIVATE_KEY_ID!});
+
+    const key = await jose.importPKCS8(appleKey, 'es256');
+
+    return jwt.sign(key);
+}
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID; 
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const scope = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://menuet.city';
@@ -20,22 +40,24 @@ const scope = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' :
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, scope);
 
 let _appleClientSecrect: string | null = null;
-const appleClientSecret = () => {
-    return _appleClientSecrect ?? (_appleClientSecrect = appleSignin.getClientSecret({
+const appleClientSecret = async () => {
+    return _appleClientSecrect ?? await buildSecret();
+
+    /*return _appleClientSecrect ?? (_appleClientSecrect = appleSignin.getClientSecret({
         clientID: process.env.APPLE_BUNDLE_ID!, 
         teamID: process.env.APPLE_TEAM_ID!, 
         privateKey: process.env.APPLE_PRIVATE_KEY!, 
         keyIdentifier: process.env.APPLE_PRIVATE_KEY_ID!,
-    }));
+    }));*/
 }
 let _appleOptions: {clientID: string, clientSecret: string, redirectUri: string} | null = null   
-const appleOptions = () => {
+const appleOptions = async () => {
     console.log(process.env.APPLE_BUNDLE_ID, process.env.APPLE_TEAM_ID, process.env.APPLE_PRIVATE_KEY, process.env.APPLE_PRIVATE_KEY_ID);
 
     return _appleOptions ?? ( _appleOptions = {
         clientID: process.env.APPLE_BUNDLE_ID!,  
         redirectUri: 'http://localhost',
-        clientSecret: appleClientSecret()
+        clientSecret: await appleClientSecret()
     })
 };
 
@@ -65,7 +87,7 @@ export const getSession = async (newHeaders: Record<string, string>): Promise<Se
 const apple = {
     handleCode: async (code: string, newHeaders: Record<string, string>) => {
         try{
-            const tokenResponse = await appleSignin.getAuthorizationToken(code, appleOptions());
+            const tokenResponse = await appleSignin.getAuthorizationToken(code, await appleOptions());
 
             const idToken = tokenResponse.id_token;
 
@@ -83,7 +105,7 @@ const apple = {
     },
     handleRefreshToken: async (refreshToken: string) => {
         try {
-            const tokens = await appleSignin.refreshAuthorizationToken(refreshToken, appleOptions());
+            const tokens = await appleSignin.refreshAuthorizationToken(refreshToken, await appleOptions());
             
             return apple.getPayload(tokens.id_token);
           } catch (err) {
