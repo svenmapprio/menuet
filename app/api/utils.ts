@@ -4,6 +4,15 @@ import { OAuth2Client, TokenPayload } from "google-auth-library";
 import appleSignin, { AppleIdTokenType } from 'apple-signin-auth';
 import { cookies, headers } from "next/headers";
 
+type JWKSet = {
+    alg: string,
+    e: string,
+    kid: string,
+    kty: string,
+    n: string,
+    use: string,
+}
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID; 
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const scope = process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://menuet.city';
@@ -25,7 +34,7 @@ const appleOptions = () => {
 
     return _appleOptions ?? ( _appleOptions = {
         clientID: process.env.APPLE_BUNDLE_ID!,  
-        redirectUri: 'https://menuet.city',
+        redirectUri: 'http://localhost',
         clientSecret: appleClientSecret()
     })
 };
