@@ -9,8 +9,6 @@ import Link from "next/link";
 import { FC, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "react-query";
 
-type T = Returns.Chats;
-
 const Component: FC = () => {
     const socketContext = useContext(SocketContext);
     const [searchTerm, setSearchTerm] = useState('');
