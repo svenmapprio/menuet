@@ -122,7 +122,7 @@ export const routeHandlers: PublicRouteHandlers = {
           }).as("post"),
           sql<{ name: string }[]>`array_agg(content.name)`.as("content"),
         ])
-        .groupBy(["post.id", "conversation.id"])
+        .groupBy(["post.id", "conversation.id", "up.relation"])
         .execute();
 
       return { user, conversations };
