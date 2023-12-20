@@ -94,18 +94,6 @@ export const routeHandlers: PublicRouteHandlers = {
         .innerJoin("post", "post.id", "conversation.postId")
         .innerJoin("postContent", "postContent.postId", "post.id")
         .innerJoin("content", "content.id", "postContent.contentId")
-        .select((sq) => [
-          jsonBuildObject({
-            id: sq.ref("conversation.id"),
-          }).as("conversation"),
-          jsonBuildObject({
-            id: sq.ref("post.id"),
-            name: sq.ref("post.name"),
-            created: sq.ref("post.created"),
-            description: sq.ref("post.description"),
-          }).as("post"),
-          sql<{ name: string }[]>`array_agg(content.name)`.as("content"),
-        ])
         .innerJoin("conversationUser as cua", (join) =>
           join
             .on("cua.userId", "=", session.user.id)
@@ -116,6 +104,24 @@ export const routeHandlers: PublicRouteHandlers = {
             .on("cub.userId", "=", userId)
             .onRef("cub.conversationId", "=", "conversation.id")
         )
+        .innerJoin("userPost as up", (join) =>
+          join
+            .on("up.userId", "=", session.user.id)
+            .onRef("up.postId", "=", "conversation.postId")
+        )
+        .select((sq) => [
+          jsonBuildObject({
+            id: sq.ref("conversation.id"),
+          }).as("conversation"),
+          jsonBuildObject({
+            id: sq.ref("post.id"),
+            name: sq.ref("post.name"),
+            created: sq.ref("post.created"),
+            description: sq.ref("post.description"),
+            relation: sq.ref("up.relation"),
+          }).as("post"),
+          sql<{ name: string }[]>`array_agg(content.name)`.as("content"),
+        ])
         .groupBy(["post.id", "conversation.id"])
         .execute();
 
