@@ -109,10 +109,14 @@ export const routeHandlers: PublicRouteHandlers = {
             .on("up.userId", "=", session.user.id)
             .onRef("up.postId", "=", "conversation.postId")
         )
+        .leftJoin("message as m", (j) =>
+          j.onRef("m.conversationId", "=", "conversation.id")
+        )
         .select((sq) => [
           jsonBuildObject({
             id: sq.ref("conversation.id"),
           }).as("conversation"),
+          sq.fn.count<number>("m.id").as("messagesCount"),
           jsonBuildObject({
             id: sq.ref("post.id"),
             name: sq.ref("post.name"),
