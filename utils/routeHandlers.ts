@@ -116,7 +116,7 @@ export const routeHandlers: PublicRouteHandlers = {
           jsonBuildObject({
             id: sq.ref("conversation.id"),
           }).as("conversation"),
-          sql<number>`count(m.id)::int`.as("messagesCount"),
+          sql<number>`count(distinct m.id)::int`.as("messagesCount"),
           jsonBuildObject({
             id: sq.ref("post.id"),
             name: sq.ref("post.name"),
