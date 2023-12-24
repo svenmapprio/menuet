@@ -78,12 +78,14 @@ export interface User {
   firstName: string;
   lastName: string | null;
   name: Generated<string | null>;
+  picture: string | null;
 }
 
 export interface UserPost {
   userId: number;
   postId: number;
   relation: UserPostRelation;
+  created: Generated<Timestamp>;
 }
 
 export interface DB {

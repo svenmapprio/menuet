@@ -308,8 +308,20 @@ export const routeHandlers: PublicRouteHandlers = {
 
       return insert;
     },
-    user: async ({ session, trx, user }) => {
+    user: async ({ session, trx, user, defaultHandle }) => {
       if (!Object.keys(user).length) return;
+
+      if (defaultHandle && typeof user.handle === "string") {
+        const existingHandles = await trx
+          .selectFrom("user")
+          .select((s) => s.fn.count("id").as("count"))
+          .where("handle", "=", user.handle)
+          .executeTakeFirstOrThrow();
+        const floatCount = parseFloat(existingHandles.count as string);
+
+        if (floatCount > 0) user.handle = `${user.handle}${floatCount + 1}`;
+      }
+
       const q = trx
         .updateTable("user")
         .set({ ...user })
