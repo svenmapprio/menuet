@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y supervisor \
     && apt-get install -y --no-install-recommends \
     && apt-get install -y build-essential \
     && apt-get install -y python3 \
-    && apt-get install curl \
+    && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
     && apt-get install -y nodejs
