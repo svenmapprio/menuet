@@ -3,7 +3,7 @@ import { jsonBuildObject, jsonObjectFrom } from "kysely/helpers/postgres";
 import { PublicRoutes, PutPost } from "./routes";
 import { RouteHandlers } from "./types";
 import { dbCommon, pgEmitter } from "./db";
-import { Post } from "./tables";
+import { Content, Post } from "./tables";
 
 export interface PublicRouteHandlers extends RouteHandlers<PublicRoutes> {}
 
@@ -61,8 +61,20 @@ export const routeHandlers: PublicRouteHandlers = {
     posts: async ({ trx, session }) =>
       await trx
         .selectFrom("post")
-        .select(["created", "description", "id", "name"])
+        .select((s) => [
+          "created",
+          "description",
+          "id",
+          "name",
+          sql<Content[]>`array_agg(row_to_json(c) order by c.id desc)`.as(
+            "content"
+          ),
+        ])
         .innerJoin("userPost", "userPost.postId", "post.id")
+        .leftJoin("postContent as pc", (j) =>
+          j.onRef("pc.postId", "=", "post.id")
+        )
+        .innerJoin("content as c", (j) => j.onRef("c.id", "=", "pc.contentId"))
         .where("userPost.relation", "=", "owner")
         .where("userPost.userId", "=", session.user.id)
         .execute(),
@@ -124,8 +136,11 @@ export const routeHandlers: PublicRouteHandlers = {
             description: sq.ref("post.description"),
             relation: sq.ref("up.relation"),
           }).as("post"),
-          sql<{ name: string }[]>`array_agg(content.name)`.as("content"),
+          sql<
+            { name: string }[]
+          >`array_agg(content.name order by content.id desc)`.as("content"),
         ])
+        .orderBy("post.created")
         .groupBy(["post.id", "conversation.id", "up.relation"])
         .execute();
 

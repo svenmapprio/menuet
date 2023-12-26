@@ -63,6 +63,10 @@ export namespace Returns {
       user: Pick<Selectable<User>, "id" | "handle">;
     }[];
   };
+
+  export type PostRow = Selectable<Post> & {
+    content: GetContent[];
+  };
 }
 
 export interface PublicRoutes extends Routes {
