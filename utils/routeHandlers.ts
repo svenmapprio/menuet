@@ -356,7 +356,7 @@ export const routeHandlers: PublicRouteHandlers = {
       const insert = await trx
         .insertInto("message")
         .values({ text, conversationId, userId: session.user.id })
-        .returning("message.id")
+        .returning(["message.id", "message.created"])
         .executeTakeFirstOrThrow();
 
       await trx
@@ -387,6 +387,8 @@ export const routeHandlers: PublicRouteHandlers = {
         .to(userId.toString())
         .to(session.user.id.toString())
         .emit("mutation", "chats");
+
+      return { id: insert.id, created: insert.created };
     },
     userPost: async ({ trx, session, postId, userId, relation }) => {
       await trx

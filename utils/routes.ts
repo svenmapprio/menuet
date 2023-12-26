@@ -97,7 +97,10 @@ export interface PublicRoutes extends Routes {
     }>;
     groupConversation: RouteInfo<{ groupId: number; conversationId: number }>;
     conversation: RouteInfo<{}>;
-    message: RouteInfo<{ conversationId: number; text: string }>;
+    message: RouteInfo<
+      { conversationId: number; text: string },
+      { id: number; created: Date }
+    >;
     post: RouteInfo<PutPost, { id: number }>;
     content: RouteInfo<{}, { id: number }>;
     postContent: RouteInfo<{ postId: number; contentId: number }>;
