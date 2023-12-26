@@ -62,10 +62,10 @@ export const routeHandlers: PublicRouteHandlers = {
       await trx
         .selectFrom("post")
         .select((s) => [
-          "created",
-          "description",
-          "id",
-          "name",
+          "post.created",
+          "post.description",
+          "post.id",
+          "post.name",
           sql<Content[]>`array_agg(row_to_json(c) order by c.id desc)`.as(
             "content"
           ),
@@ -77,6 +77,7 @@ export const routeHandlers: PublicRouteHandlers = {
         .innerJoin("content as c", (j) => j.onRef("c.id", "=", "pc.contentId"))
         .where("userPost.relation", "=", "owner")
         .where("userPost.userId", "=", session.user.id)
+        .groupBy("post.id")
         .execute(),
     users: async ({ trx, session, filter = "all" }) => {
       return dbCommon.getUsersWithStatus(trx, session?.user.id, filter);
