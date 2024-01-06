@@ -28,6 +28,23 @@ export type GetMessage = {
   user: Pick<Selectable<User>, "id" | "handle">;
 };
 
+export namespace GoogleTypes {
+  export type AutocompleteResponse = {
+    predictions: AutocompletePlace[];
+  };
+
+  export type AutocompletePlace = {
+    description: string;
+    place_id: string;
+    structured_formatting: {
+      main_text: string;
+      secondary_text: string;
+    };
+    terms: { offset: number; value: string }[];
+    types: string[];
+  };
+}
+
 export namespace Returns {
   export type ChatDetails = {
     user: Pick<Selectable<User>, "id" | "handle">;
@@ -67,6 +84,9 @@ export namespace Returns {
   export type PostRow = Selectable<Post> & {
     content: GetContent[];
   };
+
+  export type PlacePredictions =
+    GoogleTypes.AutocompleteResponse["predictions"];
 }
 
 export interface PublicRoutes extends Routes {
@@ -84,6 +104,7 @@ export interface PublicRoutes extends Routes {
       { conversationId: number },
       Returns.ConversationDetails
     >;
+    places: RouteInfo<{ name: string }, Returns.PlacePredictions>;
   };
   delete: {
     session: RouteInfo;

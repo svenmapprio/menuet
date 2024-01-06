@@ -1,9 +1,11 @@
 import { Selectable, sql } from "kysely";
 import { jsonBuildObject, jsonObjectFrom } from "kysely/helpers/postgres";
-import { PublicRoutes, PutPost } from "./routes";
+import { GoogleTypes, PublicRoutes, PutPost } from "./routes";
 import { RouteHandlers } from "./types";
 import { dbCommon, pgEmitter } from "./db";
 import { Content, Post } from "./tables";
+import axios from "axios";
+import { randomUUID } from "crypto";
 
 export interface PublicRouteHandlers extends RouteHandlers<PublicRoutes> {}
 
@@ -246,6 +248,27 @@ export const routeHandlers: PublicRouteHandlers = {
         .execute();
 
       return { conversation, messages };
+    },
+
+    places: async ({ name }) => {
+      const parametersObject = {
+        input: name,
+        types: "food",
+        location: "55.6802678,12.5813901",
+        radius: "1",
+        sessionToken: randomUUID(),
+        key: "AIzaSyCkm7Gbh4oTCsBkQtbTg9_xaypnndnzJFA",
+      };
+
+      const parameters = Object.entries(parametersObject)
+        .map(([key, value]) => `${key}=${value}`)
+        .join("&");
+
+      const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?${parameters}`;
+
+      const req = await axios.get<GoogleTypes.AutocompleteResponse>(url);
+
+      return req.data.predictions;
     },
   },
   put: {
