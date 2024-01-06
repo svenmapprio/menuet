@@ -257,7 +257,7 @@ export const routeHandlers: PublicRouteHandlers = {
         location: "55.6802678,12.5813901",
         radius: "1",
         sessionToken: randomUUID(),
-        key: "AIzaSyCkm7Gbh4oTCsBkQtbTg9_xaypnndnzJFA",
+        key: process.env.GOOGLE_PLACES_KEY,
       };
 
       const parameters = Object.entries(parametersObject)
