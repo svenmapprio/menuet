@@ -9,6 +9,7 @@ import { RouteHandlers } from "./types";
 import { dbCommon, emitServer, pgEmitter } from "./db";
 import { Content } from "./tables";
 import axios from "axios";
+import { spawn } from "child_process";
 
 export interface PublicRouteHandlers extends RouteHandlers<PublicRoutes> {}
 
@@ -534,10 +535,23 @@ export const routeHandlers: PublicRouteHandlers = {
         placeId = placeInsert.id;
       }
 
-      emitServer({
-        type: "generatePlace",
-        data: { description: description, placeId: placeId },
-      });
+      const sub = spawn(
+        "node",
+        [
+          "../services/generatePlace.js",
+          "--placeId",
+          placeId.toString(),
+          "--description",
+          description,
+        ],
+        {
+          detached: true,
+        }
+      );
+
+      sub.stdout.pipe(process.stdout);
+
+      sub.unref();
 
       return { id: placeId };
     },
