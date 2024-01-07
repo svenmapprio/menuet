@@ -113,6 +113,8 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
             const emission = e.emissionPayload;
             if (socket)
                 emissionHandlers[emission.type](socket, ((_a = emission.data) !== null && _a !== void 0 ? _a : {}));
+            else
+                console.log("did not find socket");
         });
         // adapter.on('server custom event', e => console.log('from api'));
         adapter.on("startup", (e) => {

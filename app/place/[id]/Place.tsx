@@ -32,11 +32,23 @@ const MessageView: FC<{ message: GetMessage }> = ({
   );
 };
 
-const PlaceView: FC<{ place: Returns.PlaceDetails }> = ({ place }) => {
+const PlaceView: FC<{ placeDetails: Returns.PlaceDetails }> = ({
+  placeDetails,
+}) => {
   return (
     <div>
-      <div>{place.name}</div>
-      <div>{place.internalStatus}</div>
+      <div>
+        {placeDetails.place.name} - {placeDetails.place.internalStatus}
+      </div>
+
+      {placeDetails.paragraphs.map(({ paragraph, sources }) => (
+        <div key={paragraph.id}>
+          <p>{paragraph.text}</p>
+          {sources.map((source) => (
+            <a key={source.id}>{source.url}</a>
+          ))}
+        </div>
+      ))}
     </div>
   );
 };
@@ -53,7 +65,7 @@ const Component: FC<{ placeId: number }> = ({ placeId }) => {
         <Spinner />
       ) : placeData.isSuccess ? (
         placeData.data ? (
-          <PlaceView place={placeData.data} />
+          <PlaceView placeDetails={placeData.data} />
         ) : (
           notFound()
         )

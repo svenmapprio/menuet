@@ -3,6 +3,8 @@ import {
   Content,
   Conversation,
   Message,
+  Paragraph,
+  ParagraphUrl,
   Place,
   Post,
   User,
@@ -157,7 +159,13 @@ export namespace Returns {
     content: GetContent[];
   };
 
-  export type PlaceDetails = Selectable<Place>;
+  export type PlaceDetails = {
+    place: Selectable<Place>,
+    paragraphs: {
+      paragraph: Selectable<Paragraph>,
+      sources: Selectable<ParagraphUrl>[]
+    }[]
+  };
 
   export type PlacePredictions =
     GoogleTypes.AutocompleteResponse["predictions"];

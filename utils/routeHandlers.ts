@@ -1,5 +1,9 @@
 import { sql } from "kysely";
-import { jsonBuildObject, jsonObjectFrom } from "kysely/helpers/postgres";
+import {
+  jsonBuildObject,
+  jsonObjectFrom,
+  jsonArrayFrom,
+} from "kysely/helpers/postgres";
 import { GoogleTypes, PublicRoutes } from "./routes";
 import { RouteHandlers } from "./types";
 import { dbCommon, emitServer, pgEmitter } from "./db";
@@ -273,16 +277,55 @@ export const routeHandlers: PublicRouteHandlers = {
     place: async ({ trx, placeId }) =>
       await trx
         .selectFrom("place")
-        .select([
-          "city",
-          "country",
-          "street",
-          "email",
-          "googlePlaceId",
-          "id",
-          "instagram",
-          "internalStatus",
-          "name",
+        .select((sub) => [
+          jsonObjectFrom(
+            sub
+              .selectFrom("place as subPlace")
+              .select([
+                "city",
+                "country",
+                "street",
+                "email",
+                "googlePlaceId",
+                "id",
+                "instagram",
+                "internalStatus",
+                "name",
+              ])
+              .whereRef("subPlace.id", "=", "place.id")
+          ).as("place"),
+          jsonArrayFrom(
+            sub
+              .selectFrom("paragraph as subParagraph")
+              .select((subsub) => [
+                jsonObjectFrom(
+                  subsub
+                    .selectFrom("paragraph as subsubParagraph")
+                    .select([
+                      "subsubParagraph.id",
+                      "subsubParagraph.ownerId",
+                      "subsubParagraph.text",
+                      "subsubParagraph.type",
+                    ])
+                    .whereRef("subsubParagraph.id", "=", "subParagraph.id")
+                ).as("paragraph"),
+                jsonArrayFrom(
+                  subsub
+                    .selectFrom("paragraphUrl as subsubParagraphUrl")
+                    .select([
+                      "subsubParagraphUrl.id",
+                      "subsubParagraphUrl.paragraphId",
+                      "subsubParagraphUrl.url",
+                    ])
+                    .whereRef(
+                      "subsubParagraphUrl.paragraphId",
+                      "=",
+                      "subParagraph.id"
+                    )
+                ).as("sources"),
+              ])
+              .whereRef("subParagraph.ownerId", "=", "place.id")
+          ).as("paragraphs"),
         ])
         .where("id", "=", placeId)
         .executeTakeFirst(),
