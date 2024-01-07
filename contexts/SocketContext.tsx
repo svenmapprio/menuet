@@ -30,6 +30,7 @@ type SocketContextValue = {
   isConnected: boolean;
   isBoop: boolean | null;
   querySocket: SocketQueryFunction;
+  socket: Socket | null;
 };
 
 const SocketContext = createContext({} as SocketContextValue);
@@ -111,8 +112,8 @@ export const SocketContextProvider: FC<PropsWithChildren> = ({ children }) => {
   useEffect(() => {
     if (socket) {
       socket.on("connect", () => {
-        setCookie(null, "socketId", socket.id, { sameSite: "strict" });
         console.log("got socket connection", socket.id);
+        setCookie(null, "socketId", socket.id, { sameSite: "strict" });
         setIsConnected(true);
         queryClient.invalidateQueries("session");
       });
@@ -156,7 +157,9 @@ export const SocketContextProvider: FC<PropsWithChildren> = ({ children }) => {
   }, [socket, queryClient]);
 
   return (
-    <SocketContext.Provider value={{ isBoop, isConnected, querySocket }}>
+    <SocketContext.Provider
+      value={{ isBoop, isConnected, querySocket, socket }}
+    >
       {children}
     </SocketContext.Provider>
   );

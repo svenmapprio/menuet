@@ -91,14 +91,31 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
                     console.warn("Non query payload sent to query channel, ignoring");
                     return;
                 }
-                const query = yield queryHandlers[q.queryPayload.type](socket, q.queryPayload.data);
+                const query = yield queryHandlers[q.queryPayload.type](socket.id, q.queryPayload.data);
                 const response = {
                     queryId: q.queryId,
                     data: query,
                 };
                 db_1.pgEmitter.to(socket.id).emit(`response_${q.queryId}`, response);
             }));
+            socket.on("session", (session) => __awaiter(void 0, void 0, void 0, function* () {
+                console.log("got session", socket.id, session.user.id);
+                yield db_1.db.transaction().execute((trx) => __awaiter(void 0, void 0, void 0, function* () {
+                    yield trx
+                        .deleteFrom("userSocket")
+                        .where("socketId", "=", socket.id)
+                        .execute();
+                    yield trx
+                        .insertInto("userSocket")
+                        .values({ socketId: socket.id, userId: session.user.id })
+                        .execute();
+                }));
+                socket.join(session.user.id.toString());
+            }));
         }));
+        adapter.on("disconnection", (e) => {
+            console.log("got disconnection", e);
+        });
         adapter.on("disconnect", (e) => {
             console.log("got adapter disconnect", e);
         });
@@ -109,12 +126,8 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
                 console.warn("Non emission payload sent to emission channel, ignoring");
                 return;
             }
-            const socket = adapter.sockets.sockets.get(e.socketId);
             const emission = e.emissionPayload;
-            if (socket)
-                emissionHandlers[emission.type](socket, ((_a = emission.data) !== null && _a !== void 0 ? _a : {}));
-            else
-                console.log("did not find socket", e.socketId);
+            emissionHandlers[emission.type](e.socketId, ((_a = emission.data) !== null && _a !== void 0 ? _a : {}));
         });
         // adapter.on('server custom event', e => console.log('from api'));
         adapter.on("startup", (e) => {
@@ -145,13 +158,9 @@ process.on("SIGINT", () => {
 });
 const sessions = new Map();
 const emissionHandlers = {
-    session: (socket, session) => {
-        socket.join(session.user.id.toString());
-        sessions.set(socket.id, session);
-    },
     groupJoin: ({}) => { },
     connectionCheck: ({}) => { },
-    generatePlace: (socket, { description, placeId }) => __awaiter(void 0, void 0, void 0, function* () {
+    generatePlace: (socketId, { description, placeId }) => __awaiter(void 0, void 0, void 0, function* () {
         const getWebsite = ({ url }) => __awaiter(void 0, void 0, void 0, function* () {
             try {
                 console.log("getting website", url);
@@ -353,9 +362,9 @@ const emissionHandlers = {
     }),
 };
 const queryHandlers = {
-    search: (socket, { term }) => __awaiter(void 0, void 0, void 0, function* () {
-        const session = sessions.get(socket.id);
+    search: (socketId, { term }) => __awaiter(void 0, void 0, void 0, function* () {
         const res = yield db_1.db.transaction().execute((trx) => __awaiter(void 0, void 0, void 0, function* () {
+            const session = yield db_1.dbCommon.getSessionBy(trx, { socketId });
             return db_1.dbCommon.getUsersWithStatus(trx, session === null || session === void 0 ? void 0 : session.user.id, "all", term);
         }));
         return res;

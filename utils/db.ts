@@ -70,7 +70,7 @@ export const emitServer = (emission: Emission) => {
 export const dbCommon = {
   getSessionBy: async (
     trx: Transaction<DB>,
-    { sub }: { sub: string }
+    { sub, socketId }: { sub?: string; socketId?: string }
   ): Promise<Session | null> => {
     const q = trx
       .selectFrom("account")
@@ -86,13 +86,23 @@ export const dbCommon = {
         "account.type",
         "account.userId",
       ])
-      .where("account.sub", "=", sub);
+      .$if(!!sub, (qb) => qb.where("account.sub", "=", sub!))
+      .$if(!!socketId, (qb) =>
+        qb
+          .innerJoin("userSocket", "userSocket.userId", "user.id")
+          .where("userSocket.socketId", "=", socketId!)
+          .orderBy("userSocket.created", "desc")
+      );
 
     const sessionFlat = await q.executeTakeFirst();
 
     return sessionFlat
       ? {
-          account: { sub, email: sessionFlat.email, type: sessionFlat.type },
+          account: {
+            sub: sessionFlat.sub,
+            email: sessionFlat.email,
+            type: sessionFlat.type,
+          },
           user: {
             handle: sessionFlat.handle,
             id: sessionFlat.id,

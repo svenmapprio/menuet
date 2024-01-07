@@ -99,7 +99,6 @@ export type GeneratePlaceEmission = {
   data: { placeId: number; description: string };
 };
 export type Emission =
-  | SessionEmission
   | GroupJoinEmission
   | ConnectionCheckEmission
   | GeneratePlaceEmission;

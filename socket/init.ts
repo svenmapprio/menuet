@@ -118,7 +118,7 @@ const startSocket = async () => {
         }
 
         const query = await queryHandlers[q.queryPayload.type](
-          socket,
+          socket.id,
           q.queryPayload.data
         );
         const response: SocketQueryResponse<any> = {
@@ -128,6 +128,27 @@ const startSocket = async () => {
 
         pgEmitter.to(socket.id).emit(`response_${q.queryId}`, response);
       });
+
+      socket.on("session", async (session: Session) => {
+        console.log("got session", socket.id, session.user.id);
+        await db.transaction().execute(async (trx) => {
+          await trx
+            .deleteFrom("userSocket")
+            .where("socketId", "=", socket.id)
+            .execute();
+
+          await trx
+            .insertInto("userSocket")
+            .values({ socketId: socket.id, userId: session.user.id })
+            .execute();
+        });
+
+        socket.join(session.user.id.toString());
+      });
+    });
+
+    adapter.on("disconnection", (e) => {
+      console.log("got disconnection", e);
     });
 
     adapter.on("disconnect", (e) => {
@@ -142,13 +163,9 @@ const startSocket = async () => {
         return;
       }
 
-      const socket = adapter.sockets.sockets.get(e.socketId);
-
       const emission = e.emissionPayload;
 
-      if (socket)
-        emissionHandlers[emission.type](socket, (emission.data ?? {}) as any);
-      else console.log("did not find socket", e.socketId);
+      emissionHandlers[emission.type](e.socketId, (emission.data ?? {}) as any);
     });
 
     // adapter.on('server custom event', e => console.log('from api'));
@@ -192,20 +209,15 @@ const sessions: Map<string, Session> = new Map();
 
 type handlerObject<T extends Emission | SocketQuery> = {
   [k in T["type"]]: (
-    socket: Socket,
+    socketId: string,
     d: T extends { type: k; data: infer data } ? data : never
   ) => T extends SocketQuery ? Promise<SocketQuery["returns"]> : void;
 };
 
 const emissionHandlers: handlerObject<Emission> = {
-  session: (socket, session) => {
-    socket.join(session.user.id.toString());
-
-    sessions.set(socket.id, session);
-  },
   groupJoin: ({}) => {},
   connectionCheck: ({}) => {},
-  generatePlace: async (socket, { description, placeId }) => {
+  generatePlace: async (socketId, { description, placeId }) => {
     const getWebsite = async ({ url }: { url: string }) => {
       try {
         console.log("getting website", url);
@@ -447,10 +459,10 @@ const emissionHandlers: handlerObject<Emission> = {
 };
 
 const queryHandlers: handlerObject<SocketQuery> = {
-  search: async (socket, { term }) => {
-    const session = sessions.get(socket.id);
-
+  search: async (socketId, { term }) => {
     const res = await db.transaction().execute(async (trx) => {
+      const session = await dbCommon.getSessionBy(trx, { socketId });
+
       return dbCommon.getUsersWithStatus(trx, session?.user.id, "all", term);
     });
 

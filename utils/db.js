@@ -59,7 +59,7 @@ const emitServer = (emission) => {
 };
 exports.emitServer = emitServer;
 exports.dbCommon = {
-    getSessionBy: (trx, { sub }) => __awaiter(void 0, void 0, void 0, function* () {
+    getSessionBy: (trx, { sub, socketId }) => __awaiter(void 0, void 0, void 0, function* () {
         const q = trx
             .selectFrom("account")
             .innerJoin("user", "user.id", "account.userId")
@@ -74,11 +74,19 @@ exports.dbCommon = {
             "account.type",
             "account.userId",
         ])
-            .where("account.sub", "=", sub);
+            .$if(!!sub, (qb) => qb.where("account.sub", "=", sub))
+            .$if(!!socketId, (qb) => qb
+            .innerJoin("userSocket", "userSocket.userId", "user.id")
+            .where("userSocket.socketId", "=", socketId)
+            .orderBy("userSocket.created", "desc"));
         const sessionFlat = yield q.executeTakeFirst();
         return sessionFlat
             ? {
-                account: { sub, email: sessionFlat.email, type: sessionFlat.type },
+                account: {
+                    sub: sessionFlat.sub,
+                    email: sessionFlat.email,
+                    type: sessionFlat.type,
+                },
                 user: {
                     handle: sessionFlat.handle,
                     id: sessionFlat.id,

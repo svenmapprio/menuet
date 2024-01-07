@@ -117,6 +117,12 @@ export interface UserPost {
   created: Generated<Timestamp>;
 }
 
+export interface UserSocket {
+  userId: number;
+  socketId: string;
+  created: Generated<Timestamp>;
+}
+
 export interface DB {
   account: Account;
   content: Content;
@@ -133,4 +139,5 @@ export interface DB {
   socketIoAttachments: SocketIoAttachments;
   user: User;
   userPost: UserPost;
+  userSocket: UserSocket;
 }
