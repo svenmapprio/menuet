@@ -29,7 +29,8 @@ COPY components components
 COPY contexts contexts 
 COPY hooks hooks 
 COPY public public 
-COPY socket socket 
+COPY socket socket
+COPY services services 
 COPY styles styles 
 COPY utils utils 
 COPY .eslintrc.json next.config.js tsconfig.json ./
