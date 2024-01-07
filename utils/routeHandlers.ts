@@ -538,7 +538,7 @@ export const routeHandlers: PublicRouteHandlers = {
       const sub = spawn(
         "node",
         [
-          "../services/generatePlace.js",
+          "services/generatePlace.js",
           "--placeId",
           placeId.toString(),
           "--description",
@@ -550,6 +550,7 @@ export const routeHandlers: PublicRouteHandlers = {
       );
 
       sub.stdout.pipe(process.stdout);
+      sub.stderr.pipe(process.stdout);
 
       sub.unref();
 
