@@ -491,19 +491,20 @@ export const routeHandlers: PublicRouteHandlers = {
     place: async ({ trx, googlePlaceId, description, name }) => {
       const existingPlace = await trx
         .selectFrom("place")
-        .select("id")
+        .select(["id", "internalStatus"])
         .where("googlePlaceId", "=", googlePlaceId)
         .executeTakeFirst();
 
-      if (existingPlace) {
-        console.log("place already exists");
+      const internalStatus = existingPlace?.internalStatus;
+
+      if (!!internalStatus && internalStatus !== "should_regenerate") {
+        console.log("place should not generate");
         return existingPlace;
       }
 
       try {
         const getGooglePlace = await axios.get(
           `https://maps.googleapis.com/maps/api/place/details/json?place_id=${googlePlaceId}fields=place_id&key=${process.env.GOOGLE_PLACES_KEY}`
-          // `https://places.googleapis.com/v1/places/${googlePlaceId}?fields=id&key=${process.env.GOOGLE_PLACES_KEY}`
         );
 
         if (getGooglePlace.status !== 200) {
@@ -515,24 +516,30 @@ export const routeHandlers: PublicRouteHandlers = {
         return;
       }
 
-      const placeInsert = await trx
-        .insertInto("place")
-        .values({
-          name: name,
-          googlePlaceId: googlePlaceId,
-          internalStatus: "should_regenerate",
-        })
-        .returning("id")
-        .executeTakeFirstOrThrow();
+      let placeId = existingPlace?.id;
 
-      pgEmitter.emit("mutation", ["place", placeInsert.id]);
+      if (!placeId) {
+        const placeInsert = await trx
+          .insertInto("place")
+          .values({
+            name: name,
+            googlePlaceId: googlePlaceId,
+            internalStatus: "should_regenerate",
+          })
+          .returning("id")
+          .executeTakeFirstOrThrow();
+
+        pgEmitter.emit("mutation", ["place", placeInsert.id]);
+
+        placeId = placeInsert.id;
+      }
 
       emitServer({
         type: "generatePlace",
-        data: { description: description, placeId: placeInsert.id },
+        data: { description: description, placeId: placeId },
       });
 
-      return placeInsert;
+      return { id: placeId };
     },
     userPost: async ({ trx, session, postId, userId, relation }) => {
       await trx
