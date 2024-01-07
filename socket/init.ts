@@ -381,16 +381,16 @@ const emissionHandlers: handlerObject<Emission> = {
 
     console.log("generating place");
 
+    await db
+      .updateTable("place")
+      .set({ internalStatus: "generating" })
+      .where("id", "=", placeId)
+      .execute();
+
+    pgEmitter.emit("mutation", ["place", placeId]);
+
     await db.transaction().execute(async (trx) => {
       try {
-        await trx
-          .updateTable("place")
-          .set({ internalStatus: "generating" })
-          .where("id", "=", placeId)
-          .execute();
-
-        pgEmitter.emit("mutation", ["place", placeId]);
-
         while (await getNewCompletion());
 
         const data = JSON.parse(reply!) as OpenaiTypes.Place;

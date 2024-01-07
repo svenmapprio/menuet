@@ -295,14 +295,14 @@ const emissionHandlers = {
             return reply === null;
         });
         console.log("generating place");
+        yield db_1.db
+            .updateTable("place")
+            .set({ internalStatus: "generating" })
+            .where("id", "=", placeId)
+            .execute();
+        db_1.pgEmitter.emit("mutation", ["place", placeId]);
         yield db_1.db.transaction().execute((trx) => __awaiter(void 0, void 0, void 0, function* () {
             try {
-                yield trx
-                    .updateTable("place")
-                    .set({ internalStatus: "generating" })
-                    .where("id", "=", placeId)
-                    .execute();
-                db_1.pgEmitter.emit("mutation", ["place", placeId]);
                 while (yield getNewCompletion())
                     ;
                 const data = JSON.parse(reply);
