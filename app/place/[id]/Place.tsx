@@ -44,9 +44,13 @@ const PlaceView: FC<{ placeDetails: Returns.PlaceDetails }> = ({
       {placeDetails.paragraphs.map(({ paragraph, sources }) => (
         <div key={paragraph.id}>
           <p>{paragraph.text}</p>
-          {sources.map((source) => (
-            <a key={source.id}>{source.url}</a>
-          ))}
+          <div style={{ display: "flex", gap: 10 }}>
+            {sources.map((source, index) => (
+              <a key={source.id} href={source.url}>
+                source {index + 1}
+              </a>
+            ))}
+          </div>
         </div>
       ))}
     </div>
