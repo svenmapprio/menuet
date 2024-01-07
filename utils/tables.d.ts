@@ -6,6 +6,10 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
 
 export type Int8 = ColumnType<string, string | number | bigint, string | number | bigint>;
 
+export type ParagraphType = "place_description";
+
+export type PlaceInternalStatus = "done" | "generating" | "should_regenerate";
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export type UserPostRelation = "consumer" | "creator" | "owner";
@@ -54,6 +58,31 @@ export interface Message {
   userId: number;
 }
 
+export interface Paragraph {
+  id: Generated<number>;
+  text: string;
+  type: ParagraphType;
+  ownerId: number;
+}
+
+export interface ParagraphUrl {
+  id: Generated<number>;
+  url: string;
+  paragraphId: number;
+}
+
+export interface Place {
+  id: Generated<number>;
+  googlePlaceId: string | null;
+  name: string;
+  street: string | null;
+  city: string | null;
+  country: string | null;
+  instagram: string | null;
+  email: string | null;
+  internalStatus: Generated<PlaceInternalStatus>;
+}
+
 export interface Post {
   id: Generated<number>;
   name: string;
@@ -96,6 +125,9 @@ export interface DB {
   friend: Friend;
   latestFriendConversation: LatestFriendConversation;
   message: Message;
+  paragraph: Paragraph;
+  paragraphUrl: ParagraphUrl;
+  place: Place;
   post: Post;
   postContent: PostContent;
   socketIoAttachments: SocketIoAttachments;

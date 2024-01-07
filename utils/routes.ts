@@ -3,6 +3,7 @@ import {
   Content,
   Conversation,
   Message,
+  Place,
   Post,
   User,
   UserPostRelation,
@@ -27,6 +28,77 @@ export type GetMessage = {
   message: Selectable<Message>;
   user: Pick<Selectable<User>, "id" | "handle">;
 };
+
+export namespace BingTypes {
+  export type Restaurant = {
+    _type: "Restaurant";
+    id: string;
+    entityPresentationInfo: {
+      entityScenario: string;
+    };
+  };
+
+  export type WebPage = {
+    id: string;
+    name: string;
+    url: string;
+    isFamilyFriendly: boolean;
+    displayUrl: string;
+    snippet: string;
+    deepLinks: Array<{
+      name: string;
+      url: string;
+    }>;
+    dateLastCrawled: string;
+    language: string;
+    isNavigational: boolean;
+  };
+
+  export type SearchResponse = {
+    _type: "SearchResponse";
+    queryContext: {
+      originalQuery: string;
+    };
+    webPages: {
+      webSearchUrl: string;
+      totalEstimatedMatches: number;
+      value: Array<WebPage>;
+    };
+    images: {
+      id: string;
+      readLink: string;
+      webSearchUrl: string;
+      isFamilyFriendly: boolean;
+      value: Array<object>;
+    };
+    places: {
+      value: Array<object>;
+    };
+    rankingResponse: {
+      mainline: { items: Array<any> };
+      sidebar: { items: Array<any> };
+    };
+  };
+}
+
+export namespace OpenaiTypes {
+  export type PlaceDescriptionParagraph = {
+    text: string;
+    sources: string[];
+  };
+
+  export type PlaceDescription = [PlaceDescriptionParagraph];
+
+  export type Place = {
+    name: string;
+    street: string;
+    city: string;
+    country: string;
+    instagramHandle: string | undefined;
+    businessEmail: string | undefined;
+    description: PlaceDescription;
+  };
+}
 
 export namespace GoogleTypes {
   export type AutocompleteResponse = {
@@ -85,6 +157,8 @@ export namespace Returns {
     content: GetContent[];
   };
 
+  export type PlaceDetails = Selectable<Place>;
+
   export type PlacePredictions =
     GoogleTypes.AutocompleteResponse["predictions"];
 }
@@ -104,6 +178,7 @@ export interface PublicRoutes extends Routes {
       { conversationId: number },
       Returns.ConversationDetails
     >;
+    place: RouteInfo<{ placeId: number }, Returns.PlaceDetails | undefined>;
     places: RouteInfo<{ name: string }, Returns.PlacePredictions>;
   };
   delete: {
@@ -112,7 +187,10 @@ export interface PublicRoutes extends Routes {
     userPost: RouteInfo<{ postId: number; userId: number }>;
   };
   put: {
-    user: RouteInfo<{ user: Partial<Omit<User, "id" | "name">> }>;
+    user: RouteInfo<{
+      user: Partial<Omit<User, "id" | "name">>;
+      defaultHandle: boolean;
+    }>;
     friend: RouteInfo<{ userId: number }>;
     group: RouteInfo<{ name: string }>;
     groupMember: RouteInfo<{
@@ -127,6 +205,14 @@ export interface PublicRoutes extends Routes {
       { id: number; created: Date }
     >;
     post: RouteInfo<PutPost, { id: number }>;
+    place: RouteInfo<
+      {
+        googlePlaceId: string;
+        description: string;
+        name: string;
+      },
+      { id: number } | undefined
+    >;
     content: RouteInfo<{}, { id: number }>;
     postContent: RouteInfo<{ postId: number; contentId: number }>;
     userPost: RouteInfo<{
