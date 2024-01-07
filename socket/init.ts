@@ -388,6 +388,8 @@ const emissionHandlers: handlerObject<Emission> = {
           .where("id", "=", placeId)
           .execute();
 
+        pgEmitter.emit("mutation", ["place", placeId]);
+
         while (await getNewCompletion());
 
         const data = JSON.parse(reply!) as OpenaiTypes.Place;

@@ -300,6 +300,7 @@ const emissionHandlers = {
                     .set({ internalStatus: "generating" })
                     .where("id", "=", placeId)
                     .execute();
+                db_1.pgEmitter.emit("mutation", ["place", placeId]);
                 while (yield getNewCompletion())
                     ;
                 const data = JSON.parse(reply);

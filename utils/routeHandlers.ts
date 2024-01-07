@@ -482,6 +482,8 @@ export const routeHandlers: PublicRouteHandlers = {
         .returning("id")
         .executeTakeFirstOrThrow();
 
+      pgEmitter.emit("mutation", ["place", placeInsert.id]);
+
       emitServer({
         type: "generatePlace",
         data: { description: description, placeId: placeInsert.id },
