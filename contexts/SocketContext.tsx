@@ -39,9 +39,14 @@ const useSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("https://menuet.city", {
-      transports: ["webtransport", "websocket"],
-    });
+    const socket = io(
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:4000"
+        : "https://menuet.city",
+      {
+        transports: ["websocket"],
+      }
+    );
 
     setSocket(socket);
 
