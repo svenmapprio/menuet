@@ -46,6 +46,13 @@ export const emitServer = (emission: Emission) => {
   try {
     const socketIdCookie = cookies().get("socketId");
 
+    console.log(
+      "emission type",
+      emission.type,
+      "socketIdCookie",
+      socketIdCookie?.value
+    );
+
     if (socketIdCookie) {
       const socketId = socketIdCookie.value;
       const emissionWrap: EmissionWrapper = {

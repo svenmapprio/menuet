@@ -42,6 +42,7 @@ exports.pgEmitter = new postgres_emitter_1.Emitter(dbPool);
 const emitServer = (emission) => {
     try {
         const socketIdCookie = (0, headers_1.cookies)().get("socketId");
+        console.log("emission type", emission.type, "socketIdCookie", socketIdCookie === null || socketIdCookie === void 0 ? void 0 : socketIdCookie.value);
         if (socketIdCookie) {
             const socketId = socketIdCookie.value;
             const emissionWrap = {

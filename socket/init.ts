@@ -148,7 +148,7 @@ const startSocket = async () => {
 
       if (socket)
         emissionHandlers[emission.type](socket, (emission.data ?? {}) as any);
-      else console.log("did not find socket");
+      else console.log("did not find socket", e.socketId);
     });
 
     // adapter.on('server custom event', e => console.log('from api'));

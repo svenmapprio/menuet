@@ -38,7 +38,9 @@ const useSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io();
+    const socket = io("http://localhost:4000", {
+      transports: ["webtransport", "websocket"],
+    });
 
     setSocket(socket);
 
@@ -103,6 +105,10 @@ export const SocketContextProvider: FC<PropsWithChildren> = ({ children }) => {
   );
 
   useEffect(() => {
+    console.log("got new socket id", socket?.id);
+  }, [socket?.id]);
+
+  useEffect(() => {
     if (socket) {
       socket.on("connect", () => {
         setCookie(null, "socketId", socket.id, { sameSite: "strict" });
@@ -112,6 +118,7 @@ export const SocketContextProvider: FC<PropsWithChildren> = ({ children }) => {
       });
 
       socket.on("disconnect", () => {
+        console.log("socket disconnected");
         setIsConnected(false);
       });
 
