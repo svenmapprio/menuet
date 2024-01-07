@@ -8,7 +8,7 @@ export type Int8 = ColumnType<string, string | number | bigint, string | number 
 
 export type ParagraphType = "place_description";
 
-export type PlaceInternalStatus = "done" | "generating" | "should_regenerate";
+export type PlaceInternalStatus = "done" | "generating" | "generation_failed" | "should_regenerate";
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 

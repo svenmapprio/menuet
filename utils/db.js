@@ -19,7 +19,7 @@ const postgres_1 = require("kysely/helpers/postgres");
 const dbPool = new pg_1.Pool({
     host: process.env.DATABASE_HOST,
     database: process.env.DATABASE_DB,
-    port: parseInt((_a = process.env.DATABASE_PORT) !== null && _a !== void 0 ? _a : ''),
+    port: parseInt((_a = process.env.DATABASE_PORT) !== null && _a !== void 0 ? _a : ""),
     password: process.env.DATABASE_PASS,
     user: process.env.DATABASE_USER,
     ssl: {
@@ -28,7 +28,7 @@ const dbPool = new pg_1.Pool({
         ca: process.env.SSL_CA,
         cert: process.env.SSL_CERT,
         key: process.env.SSL_KEY,
-        rejectUnauthorized: true
+        rejectUnauthorized: true,
     },
 });
 exports.db = new kysely_1.Kysely({
@@ -41,41 +41,78 @@ exports.db = new kysely_1.Kysely({
 exports.pgEmitter = new postgres_emitter_1.Emitter(dbPool);
 const emitServer = (emission) => {
     try {
-        const socketIdCookie = (0, headers_1.cookies)().get('socketId');
+        const socketIdCookie = (0, headers_1.cookies)().get("socketId");
         if (socketIdCookie) {
             const socketId = socketIdCookie.value;
-            const emissionWrap = { isEmission: true, emissionPayload: emission, socketId };
-            exports.pgEmitter.serverSideEmit('emission', emissionWrap);
+            const emissionWrap = {
+                isEmission: true,
+                emissionPayload: emission,
+                socketId,
+            };
+            exports.pgEmitter.serverSideEmit("emission", emissionWrap);
         }
     }
     catch (e) {
-        console.log('error getting socket', e);
+        console.log("error getting socket", e);
     }
 };
 exports.emitServer = emitServer;
 exports.dbCommon = {
     getSessionBy: (trx, { sub }) => __awaiter(void 0, void 0, void 0, function* () {
-        const q = trx.selectFrom('account')
-            .innerJoin('user', 'user.id', 'account.userId')
-            .select(['user.handle', 'user.id', 'user.name', 'user.firstName', 'user.lastName', 'account.email', 'account.sub', 'account.type', 'account.userId'])
-            .where('account.sub', '=', sub);
-        const sessionFlat = yield q
-            .executeTakeFirst();
-        return sessionFlat ? { account: { sub, email: sessionFlat.email, type: sessionFlat.type }, user: { handle: sessionFlat.handle, id: sessionFlat.id, name: sessionFlat.name, firstName: sessionFlat.firstName, lastName: sessionFlat.lastName } } : null;
+        const q = trx
+            .selectFrom("account")
+            .innerJoin("user", "user.id", "account.userId")
+            .select([
+            "user.handle",
+            "user.id",
+            "user.name",
+            "user.firstName",
+            "user.lastName",
+            "account.email",
+            "account.sub",
+            "account.type",
+            "account.userId",
+        ])
+            .where("account.sub", "=", sub);
+        const sessionFlat = yield q.executeTakeFirst();
+        return sessionFlat
+            ? {
+                account: { sub, email: sessionFlat.email, type: sessionFlat.type },
+                user: {
+                    handle: sessionFlat.handle,
+                    id: sessionFlat.id,
+                    name: sessionFlat.name,
+                    firstName: sessionFlat.firstName,
+                    lastName: sessionFlat.lastName,
+                },
+            }
+            : null;
     }),
-    getOrPutSession: (trx, { sub, google, apple }) => __awaiter(void 0, void 0, void 0, function* () {
-        var _b, _c, _d;
+    getOrPutSession: (trx, { sub, google, apple, }) => __awaiter(void 0, void 0, void 0, function* () {
+        var _b, _c, _d, _e;
         let session = yield exports.dbCommon.getSessionBy(trx, { sub });
         if (!session && (google || apple)) {
-            const firstName = (_b = google === null || google === void 0 ? void 0 : google.given_name) !== null && _b !== void 0 ? _b : '';
+            const firstName = (_b = google === null || google === void 0 ? void 0 : google.given_name) !== null && _b !== void 0 ? _b : "";
             const lastName = (_c = google === null || google === void 0 ? void 0 : google.family_name) !== null && _c !== void 0 ? _c : null;
             const email = (_d = google === null || google === void 0 ? void 0 : google.email) !== null && _d !== void 0 ? _d : apple === null || apple === void 0 ? void 0 : apple.email;
-            const type = google ? 'google' : apple ? 'apple' : '';
-            const { id: userId } = yield trx.insertInto('user')
-                .values({ handle: '', firstName, lastName })
-                .returning('user.id')
+            const type = google ? "google" : apple ? "apple" : "";
+            let handle = `${firstName}${lastName !== null && lastName !== void 0 ? lastName : ""}`.toLowerCase();
+            const picture = (_e = google === null || google === void 0 ? void 0 : google.picture) !== null && _e !== void 0 ? _e : null;
+            const existingHandles = yield trx
+                .selectFrom("user")
+                .select((s) => s.fn.count("id").as("count"))
+                .where("handle", "=", handle)
                 .executeTakeFirstOrThrow();
-            yield trx.insertInto('account')
+            const floatCount = parseFloat(existingHandles.count);
+            if (floatCount > 0)
+                handle = `${handle}${floatCount + 1}`;
+            const { id: userId } = yield trx
+                .insertInto("user")
+                .values({ handle, firstName, lastName, picture })
+                .returning("user.id")
+                .executeTakeFirstOrThrow();
+            yield trx
+                .insertInto("account")
                 .values({ sub, type, userId, email })
                 .execute();
             session = yield exports.dbCommon.getSessionBy(trx, { sub });
@@ -83,105 +120,117 @@ exports.dbCommon = {
         return session;
     }),
     getUsersBaseQuery: (trx, userId) => {
-        return trx.selectFrom(['user as u'])
-            .leftJoin('friend as self', join => (join
-            .on('self.userId', '=', userId)
-            .onRef('self.friendId', '=', 'u.id')))
-            .leftJoin('friend as other', join => (join
-            .onRef('other.userId', '=', 'u.id')
-            .on('other.friendId', '=', userId)))
-            .select(['u.handle', 'u.id'])
+        return trx
+            .selectFrom(["user as u"])
+            .leftJoin("friend as self", (join) => join.on("self.userId", "=", userId).onRef("self.friendId", "=", "u.id"))
+            .leftJoin("friend as other", (join) => join
+            .onRef("other.userId", "=", "u.id")
+            .on("other.friendId", "=", userId))
+            .select(["u.handle", "u.id"])
             .select((0, kysely_1.sql) `case 
                 when self.user_id is not null then true else false end
-            `.as('self'))
+            `.as("self"))
             .select((0, kysely_1.sql) `case 
                 when other.user_id is not null then true else false end
-            `.as('other'))
-            .$if(!!userId, qb => qb.where('u.id', '<>', userId));
+            `.as("other"))
+            .$if(!!userId, (qb) => qb.where("u.id", "<>", userId));
     },
     getShareUsers: (trx, userId, postId) => {
-        const q = exports.dbCommon.getUsersBaseQuery(trx, userId)
-            .leftJoin('userPost as up', join => (join
-            .on('up.postId', '=', postId)
-            .onRef('up.userId', '=', 'u.id')
-            .on('up.relation', '<>', 'owner')))
+        const q = exports.dbCommon
+            .getUsersBaseQuery(trx, userId)
+            .leftJoin("userPost as up", (join) => join
+            .on("up.postId", "=", postId)
+            .onRef("up.userId", "=", "u.id")
+            .on("up.relation", "<>", "owner"))
             .select((0, kysely_1.sql) `case
                 when up.user_id is not null then true else false end
-            `.as('shared'))
-            .where('self.userId', 'is not', null)
-            .where('other.userId', 'is not', null);
+            `.as("shared"))
+            .where("self.userId", "is not", null)
+            .where("other.userId", "is not", null);
         return q.execute();
     },
-    getUsersWithStatus: (trx, userId = null, filter = 'all', searchTerm = '') => {
-        const q = exports.dbCommon.getUsersBaseQuery(trx, userId)
-            .where('u.handle', 'ilike', `%${searchTerm}%`);
+    getUsersWithStatus: (trx, userId = null, filter = "all", searchTerm = "") => {
+        const q = exports.dbCommon
+            .getUsersBaseQuery(trx, userId)
+            .where("u.handle", "ilike", `%${searchTerm}%`);
         return q.execute();
     },
     getPost: (trx, postId, userId) => __awaiter(void 0, void 0, void 0, function* () {
-        const details = yield trx.selectFrom('post as outer')
-            .select(sq => [
+        const details = yield trx
+            .selectFrom("post as outer")
+            .select((sq) => [
             //#region post
-            (0, postgres_1.jsonObjectFrom)(sq.selectFrom('post')
-                .select(['post.name', 'post.id', 'post.created', 'post.description'])
-                .whereRef('post.id', '=', 'outer.id')).as('post'),
+            (0, postgres_1.jsonObjectFrom)(sq
+                .selectFrom("post")
+                .select([
+                "post.name",
+                "post.id",
+                "post.created",
+                "post.description",
+            ])
+                .whereRef("post.id", "=", "outer.id")).as("post"),
             //#endregion post
             //#region relations
-            (0, postgres_1.jsonArrayFrom)(sq.selectFrom('userPost')
-                .select('relation')
-                .whereRef('userPost.postId', '=', 'outer.id')
-                .where('userPost.userId', '=', userId)).as('relations'),
+            (0, postgres_1.jsonArrayFrom)(sq
+                .selectFrom("userPost")
+                .select("relation")
+                .whereRef("userPost.postId", "=", "outer.id")
+                .where("userPost.userId", "=", userId)).as("relations"),
             //#endregion relations
             //#region content
-            (0, postgres_1.jsonArrayFrom)(sq.selectFrom('postContent')
-                .innerJoin('content', 'content.id', 'postContent.contentId')
-                .select(['content.id', 'content.name'])
-                .whereRef('postContent.postId', '=', 'outer.id')).as('content'),
+            (0, postgres_1.jsonArrayFrom)(sq
+                .selectFrom("postContent")
+                .innerJoin("content", "content.id", "postContent.contentId")
+                .select(["content.id", "content.name"])
+                .whereRef("postContent.postId", "=", "outer.id")).as("content"),
             //#endregion content
             //#region conversations
-            (0, postgres_1.jsonArrayFrom)(sq.selectFrom('conversation as conversationOuter')
-                .innerJoin('conversationUser', 'conversationUser.conversationId', 'conversationOuter.id')
-                .select(ssq => [
-                'conversationOuter.id',
+            (0, postgres_1.jsonArrayFrom)(sq
+                .selectFrom("conversation as conversationOuter")
+                .innerJoin("conversationUser", "conversationUser.conversationId", "conversationOuter.id")
+                .select((ssq) => [
+                "conversationOuter.id",
                 //#region conversations.user
-                (0, postgres_1.jsonObjectFrom)(ssq.selectFrom('conversationUser')
-                    .innerJoin('user', 'user.id', 'conversationUser.userId')
-                    .select(['user.id', 'user.handle'])
-                    .where('conversationUser.userId', '<>', userId)
-                    .whereRef('conversationUser.conversationId', '=', 'conversationOuter.id')).as('user')
+                (0, postgres_1.jsonObjectFrom)(ssq
+                    .selectFrom("conversationUser")
+                    .innerJoin("user", "user.id", "conversationUser.userId")
+                    .select(["user.id", "user.handle"])
+                    .where("conversationUser.userId", "<>", userId)
+                    .whereRef("conversationUser.conversationId", "=", "conversationOuter.id")).as("user"),
                 //#endregion conversations.user
             ])
-                .whereRef('conversationOuter.postId', '=', 'outer.id')
-                .where('conversationUser.userId', '=', userId)).as('conversations')
+                .whereRef("conversationOuter.postId", "=", "outer.id")
+                .where("conversationUser.userId", "=", userId)).as("conversations"),
             //#endregion conversations
         ])
-            .where('outer.id', '=', postId)
+            .where("outer.id", "=", postId)
             .executeTakeFirstOrThrow();
         /*
-         //#region conversations.messages
-                    jsonArrayFrom(
-                        ssq.selectFrom('message as messageOuter')
-                        .select(sssq => [
-                            //#region conversations.messages.message
-                            jsonObjectFrom(
-                                sssq.selectFrom('message')
-                                .select(['message.id', 'message.text', 'message.created', 'message.userId', 'message.conversationId'])
-                                .whereRef('message.id', '=', 'messageOuter.id')
-                            ).as('message'),
-                            //#endregion conversations.messages.message
-                            //#region conversations.messages.user
-                            jsonObjectFrom(
-                                sssq.selectFrom('user')
-                                .select(['user.id', 'user.handle'])
-                                .whereRef('user.id', '=', 'messageOuter.userId')
-                            ).as('user'),
-                            //#endregion conversations.messages.user
-                        ])
-                        .whereRef('messageOuter.conversationId', '=', 'conversationOuter.id')
-                    ).as('messages')
-                    //#endregion conversations.messages
-         */
+                 //#region conversations.messages
+                            jsonArrayFrom(
+                                ssq.selectFrom('message as messageOuter')
+                                .select(sssq => [
+                                    //#region conversations.messages.message
+                                    jsonObjectFrom(
+                                        sssq.selectFrom('message')
+                                        .select(['message.id', 'message.text', 'message.created', 'message.userId', 'message.conversationId'])
+                                        .whereRef('message.id', '=', 'messageOuter.id')
+                                    ).as('message'),
+                                    //#endregion conversations.messages.message
+                                    //#region conversations.messages.user
+                                    jsonObjectFrom(
+                                        sssq.selectFrom('user')
+                                        .select(['user.id', 'user.handle'])
+                                        .whereRef('user.id', '=', 'messageOuter.userId')
+                                    ).as('user'),
+                                    //#endregion conversations.messages.user
+                                ])
+                                .whereRef('messageOuter.conversationId', '=', 'conversationOuter.id')
+                            ).as('messages')
+                            //#endregion conversations.messages
+                 */
         return details;
-    })
+    }),
 };
 var ErrorCode;
 (function (ErrorCode) {
@@ -193,12 +242,12 @@ var ErrorCode;
     ErrorCode[ErrorCode["ResourcePermissions"] = 5] = "ResourcePermissions";
 })(ErrorCode = exports.ErrorCode || (exports.ErrorCode = {}));
 const Errors = {
-    [ErrorCode.ResourceNotFound]: 'Resource not found',
-    [ErrorCode.PathNotFound]: 'Path not found',
-    [ErrorCode.HandlerNotFound]: 'Handler not found',
-    [ErrorCode.DomainNotFound]: 'Domain not found',
-    [ErrorCode.UserSessionInvalid]: 'User session not found',
-    [ErrorCode.ResourcePermissions]: 'User missing permissions for the requested resource',
+    [ErrorCode.ResourceNotFound]: "Resource not found",
+    [ErrorCode.PathNotFound]: "Path not found",
+    [ErrorCode.HandlerNotFound]: "Handler not found",
+    [ErrorCode.DomainNotFound]: "Domain not found",
+    [ErrorCode.UserSessionInvalid]: "User session not found",
+    [ErrorCode.ResourcePermissions]: "User missing permissions for the requested resource",
 };
 class ApiError extends Error {
     constructor(errorCode) {
@@ -221,7 +270,8 @@ class ApiError extends Error {
             default:
                 this.statusCode = 500;
         }
-        this.message = (_a = Errors[errorCode]) !== null && _a !== void 0 ? _a : 'An unknown server error has occured, and the dev team has been automatically notified';
+        this.message =
+            (_a = Errors[errorCode]) !== null && _a !== void 0 ? _a : "An unknown server error has occured, and the dev team has been automatically notified";
     }
 }
 exports.ApiError = ApiError;
