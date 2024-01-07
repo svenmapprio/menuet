@@ -39,7 +39,7 @@ const useSocket = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("http://localhost:4000", {
+    const socket = io("https://menuet.city", {
       transports: ["webtransport", "websocket"],
     });
 
