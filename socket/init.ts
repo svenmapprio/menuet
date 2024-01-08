@@ -22,11 +22,6 @@ import { waitUntil } from "../utils/helpers";
 import { pgEmitter, db, dbCommon } from "../utils/db";
 import axios from "axios";
 
-import puppeteer from "puppeteer";
-import { load } from "cheerio";
-import { BingTypes, OpenaiTypes } from "../utils/routes";
-import OpenAI from "openai";
-
 const state = {
   connected: false,
   restarting: false,
@@ -129,8 +124,8 @@ const startSocket = async () => {
         pgEmitter.to(socket.id).emit(`response_${q.queryId}`, response);
       });
 
-      socket.on("session", async (session: Session) => {
-        console.log("got session", socket.id, session.user.id);
+      socket.on("userId", async (userId: number) => {
+        console.log("got userId", socket.id, userId);
         await db.transaction().execute(async (trx) => {
           await trx
             .deleteFrom("userSocket")
@@ -139,11 +134,11 @@ const startSocket = async () => {
 
           await trx
             .insertInto("userSocket")
-            .values({ socketId: socket.id, userId: session.user.id })
+            .values({ socketId: socket.id, userId: userId })
             .execute();
         });
 
-        socket.join(session.user.id.toString());
+        socket.join(userId.toString());
       });
     });
 

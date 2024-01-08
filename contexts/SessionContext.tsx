@@ -71,7 +71,7 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({ children }) => {
 
       if (session) {
         console.log("emitting session", socketContext.socket?.id);
-        socketContext.socket!.emit("session", session);
+        socketContext.socket!.emit("userId", session.user.id);
       }
 
       return session;

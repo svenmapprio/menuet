@@ -95,8 +95,8 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
                 };
                 db_1.pgEmitter.to(socket.id).emit(`response_${q.queryId}`, response);
             }));
-            socket.on("session", (session) => __awaiter(void 0, void 0, void 0, function* () {
-                console.log("got session", socket.id, session.user.id);
+            socket.on("userId", (userId) => __awaiter(void 0, void 0, void 0, function* () {
+                console.log("got userId", socket.id, userId);
                 yield db_1.db.transaction().execute((trx) => __awaiter(void 0, void 0, void 0, function* () {
                     yield trx
                         .deleteFrom("userSocket")
@@ -104,10 +104,10 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
                         .execute();
                     yield trx
                         .insertInto("userSocket")
-                        .values({ socketId: socket.id, userId: session.user.id })
+                        .values({ socketId: socket.id, userId: userId })
                         .execute();
                 }));
-                socket.join(session.user.id.toString());
+                socket.join(userId.toString());
             }));
         }));
         adapter.on("disconnection", (e) => {
