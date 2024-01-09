@@ -243,6 +243,7 @@ export const dbCommon = {
               "subPlace.instagram",
               "subPlace.internalStatus",
               "subPlace.googlePlaceId",
+              "subPlace.created",
             ])
             .whereRef("subPlace.id", "=", "outer.placeId")
         ).as("place"),

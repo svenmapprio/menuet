@@ -97,6 +97,7 @@ export const routeHandlers: PublicRouteHandlers = {
                 "subPlace.name",
                 "subPlace.street",
                 "subPlace.city",
+                "subPlace.created",
               ])
               .whereRef("subPlace.id", "=", "post.placeId")
           ).as("place"),
@@ -337,6 +338,7 @@ export const routeHandlers: PublicRouteHandlers = {
                 "instagram",
                 "internalStatus",
                 "name",
+                "created",
               ])
               .whereRef("subPlace.id", "=", "place.id")
           ).as("place"),
@@ -536,7 +538,7 @@ export const routeHandlers: PublicRouteHandlers = {
 
       return { id: insert.id, created: insert.created };
     },
-    place: async ({ trx, googlePlaceId, description, name }) => {
+    place: async ({ trx, googlePlaceId, description, name, session }) => {
       const existingPlace = await trx
         .selectFrom("place")
         .select(["id", "internalStatus"])
@@ -576,6 +578,12 @@ export const routeHandlers: PublicRouteHandlers = {
           })
           .returning("id")
           .executeTakeFirstOrThrow();
+
+        await trx
+          .insertInto("userPlace")
+          .values({ placeId: placeInsert.id, userId: session.user.id })
+          .onConflict((oc) => oc.columns(["placeId", "userId"]).doNothing())
+          .execute();
 
         pgEmitter.emit("mutation", ["place", placeInsert.id]);
 

@@ -81,6 +81,7 @@ export interface Place {
   instagram: string | null;
   email: string | null;
   internalStatus: Generated<PlaceInternalStatus>;
+  created: Generated<Timestamp>;
 }
 
 export interface Post {
@@ -108,6 +109,11 @@ export interface User {
   lastName: string | null;
   name: Generated<string | null>;
   picture: string | null;
+}
+
+export interface UserPlace {
+  userId: number;
+  placeId: number;
 }
 
 export interface UserPost {
@@ -138,6 +144,7 @@ export interface DB {
   postContent: PostContent;
   socketIoAttachments: SocketIoAttachments;
   user: User;
+  userPlace: UserPlace;
   userPost: UserPost;
   userSocket: UserSocket;
 }
