@@ -85,9 +85,9 @@ export interface Place {
 
 export interface Post {
   id: Generated<number>;
-  name: string;
   description: string | null;
   created: Generated<Timestamp>;
+  placeId: number;
 }
 
 export interface PostContent {

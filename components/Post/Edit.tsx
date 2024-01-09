@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import { baseUrl, domains } from "@/utils/fetch";
 import { useForm } from "@/utils/form";
-import { GetPost, PublicRoutes, PutPost } from "@/utils/routes";
+import { PutPost } from "@/utils/routes";
 import { Post } from "@/utils/tables";
 import { Routes } from "@/utils/types";
 import { GetContent } from "@/utils/routes";
@@ -11,85 +11,210 @@ import { Insertable } from "kysely";
 import { UnwrapPromise } from "next/dist/lib/coalesced-function";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { FC, FormEventHandler, FunctionComponent, useEffect, PropsWithChildren, ReactElement, ReactNode, useCallback, useState, Thenable } from "react";
-import { useMutation } from "react-query";
-import { string } from "yup";
+import {
+  FC,
+  FormEventHandler,
+  FunctionComponent,
+  useEffect,
+  PropsWithChildren,
+  ReactElement,
+  ReactNode,
+  useCallback,
+  useState,
+  Thenable,
+  useRef,
+} from "react";
+import { useMutation, useQuery } from "react-query";
+import { number, string } from "yup";
 import Input from "../Input";
 
-type Props<T> = PropsWithChildren<{onSubmit: (data: T) => void}>
+type Props<T> = PropsWithChildren<{ onSubmit: (data: T) => void }>;
 type FCReturns<P> = ReturnType<FC<P>>;
 
-const Form = <T extends unknown>({children, onSubmit}: Props<T>): FCReturns<Props<T>> => {
-    const handleSubmit = useCallback<FormEventHandler<HTMLFormElement>>((e) => {
-        e.preventDefault();
+const Form = <T extends unknown>({
+  children,
+  onSubmit,
+}: Props<T>): FCReturns<Props<T>> => {
+  const handleSubmit = useCallback<FormEventHandler<HTMLFormElement>>((e) => {
+    e.preventDefault();
 
-        const data = new FormData(e.target as HTMLFormElement);
+    const data = new FormData(e.target as HTMLFormElement);
 
-        onSubmit(Object.fromEntries(data) as T);
-    }, [])
-    return <form onSubmit={handleSubmit}>
-        {children}
-    </form>
-}
+    onSubmit(Object.fromEntries(data) as T);
+  }, []);
+  return <form onSubmit={handleSubmit}>{children}</form>;
+};
 
-const ContentView: FC<{content: GetContent}> = ({content: {name, id}}) => {
-    const src = `https://menuet.ams3.cdn.digitaloceanspaces.com/content/${name}-200-200.webp`;
-    
-    return <Image src={src} alt={'Preview of selected image'} height={200} width={200} style={{objectFit: 'cover'}} />;
-}
+const ContentView: FC<{ content: GetContent }> = ({
+  content: { name, id },
+}) => {
+  const src = `https://menuet.ams3.cdn.digitaloceanspaces.com/content/${name}-200-200.webp`;
 
-const Component: FC<{post: PutPost}> = ({post: {content,post}}) => {
-    const savePost = useMutation({mutationFn: domains.public.put.post});
-    const router = useRouter();
-    const [newContent, setNewContent] = useState<typeof content>([]);
-    const [allContent, setAllContent] = useState<typeof content>([]);
+  return (
+    <Image
+      src={src}
+      alt={"Preview of selected image"}
+      height={200}
+      width={200}
+      style={{ objectFit: "cover" }}
+    />
+  );
+};
 
-    const {handleSubmit, formState: {errors}, register} = useForm<Insertable<Post>>({
-        model: post,
-        schema: {
-            name: string().required(),
-            description: string().transform(v => v || null),
-        }
+const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
+  const savePost = useMutation({
+    mutationFn: domains.public.put.post,
+    mutationKey: ["post", post.id],
+  });
+  const router = useRouter();
+  const [newContent, setNewContent] = useState<typeof content>([]);
+  const [allContent, setAllContent] = useState<typeof content>([]);
+
+  const {
+    handleSubmit,
+    formState: { errors },
+    register,
+  } = useForm<Omit<Insertable<Post>, "placeId">>({
+    model: post,
+    schema: {
+      description: string().transform((v) => v || null),
+    },
+  });
+
+  const handleData = useCallback(
+    handleSubmit(async (data) => {
+      if (!placeId) {
+        alert("you have to select a place");
+        return;
+      }
+
+      const res = await savePost.mutateAsync({
+        post: { id: post.id, placeId: placeId, ...data },
+        content: allContent,
+      });
+      router.replace(`/post/view/${res.id}`);
+    }),
+    [post.id, allContent]
+  );
+
+  useEffect(() => {
+    setAllContent([...content, ...newContent]);
+  }, [content, newContent]);
+
+  const [selectingPlace, setSelectingPlace] = useState(false);
+  const [placeId, setPlaceId] = useState<number>(post.placeId);
+  const [placeSearchTerm, setPlaceSearchTerm] = useState("");
+  const [placeQuerySearchTerm, setPlaceQuerySearchTerm] = useState("");
+
+  const placeTimeout = useRef<any>();
+
+  useEffect(() => {
+    clearTimeout(placeTimeout.current);
+    const _placeSearchTerm = placeSearchTerm;
+
+    new Promise<void>(
+      (res) => (placeTimeout.current = setTimeout(res, 500))
+    ).then(() => {
+      if (placeSearchTerm === _placeSearchTerm)
+        setPlaceQuerySearchTerm(placeSearchTerm.trim());
     });
+  }, [placeSearchTerm]);
 
-    const handleData = useCallback(handleSubmit(async data => {
-        const res = await savePost.mutateAsync({post: {id: post.id, ...data}, content: allContent});
-        router.replace(`/post/view/${res.id}`);
-    }), [post.id, allContent]);
+  const placeDetailsData = useQuery({
+    queryKey: ["place", placeId],
+    queryFn: async () => {
+      return domains.public.get.place({ placeId: placeId! });
+    },
+    enabled: !!placeId,
+  });
 
-    useEffect(() => {
-        setAllContent([...content, ...newContent]);
-    }, [content, newContent]);
+  const placeSearchData = useQuery({
+    queryFn: async () => {
+      return await domains.public.get.places({ name: placeSearchTerm });
+    },
+    queryKey: ["places", placeQuerySearchTerm],
+  });
 
-    return <div>
-        {
-            allContent.map(c => <ContentView key={c.id} content={c} />)
-        }
-        <Input.File resetOnSelect={true} onFiles={async files => {
-            let newContentNext: GetContent[] = [...newContent];
-            for(let i = 0; i < files.length; i++){
-                const res = await axios<GetContent>(`${baseUrl}/image`, {
-                    method: 'PUT',
-                    data: await files[i].arrayBuffer(),
-                    headers: {
-                        'content-type': 'application/octet-stream'
-                    }
-                });
+  const putPlace = useMutation("putPlace", {
+    mutationFn: domains.public.put.place,
+  });
 
-                const content = res.data;
+  return (
+    <div>
+      {allContent.map((c) => (
+        <ContentView key={c.id} content={c} />
+      ))}
+      <Input.File
+        resetOnSelect={true}
+        onFiles={async (files) => {
+          let newContentNext: GetContent[] = [...newContent];
+          for (let i = 0; i < files.length; i++) {
+            const res = await axios<GetContent>(`${baseUrl}/image`, {
+              method: "PUT",
+              data: await files[i].arrayBuffer(),
+              headers: {
+                "content-type": "application/octet-stream",
+              },
+            });
 
-                newContentNext.push(content);
-            }
+            const content = res.data;
 
-            setNewContent(newContentNext);
-        }} />
-        {/* <button onClick={handleAddContent}>Add content</button> */}
-        <form onSubmit={handleData}>
-            <input {...register("name")} />
-            <input {...register("description")} />
-            <button type={"submit"}>Save</button>
-        </form>
-    </div>;
-}
+            newContentNext.push(content);
+          }
+
+          setNewContent(newContentNext);
+        }}
+      />
+      <form onSubmit={handleData}>
+        {!selectingPlace ? (
+          <button onClick={() => setSelectingPlace(true)}>
+            {placeId
+              ? placeDetailsData.isSuccess
+                ? placeDetailsData.data
+                  ? placeDetailsData.data.place.name
+                  : "Place not found"
+                : "Loading place ..."
+              : "Select place"}
+          </button>
+        ) : (
+          <div>
+            <input
+              value={placeSearchTerm}
+              onChange={(e) => setPlaceSearchTerm(e.target.value)}
+            />
+            {placeSearchData.isLoading
+              ? "Searching places ... "
+              : placeSearchData.isSuccess
+              ? placeSearchData.data.map((place) => (
+                  <div style={{ display: "flex" }} key={place.place_id}>
+                    <button
+                      onClick={async () => {
+                        const res = await putPlace.mutateAsync({
+                          description: place.description,
+                          googlePlaceId: place.place_id,
+                          name: place.structured_formatting.main_text,
+                        });
+
+                        if (res) {
+                          setPlaceId(res.id);
+                          setSelectingPlace(false);
+                        } else {
+                          alert("something went wrong selecting the place");
+                        }
+                      }}
+                    >
+                      <p>{place.description}</p>
+                    </button>
+                  </div>
+                ))
+              : null}
+          </div>
+        )}
+        <input {...register("description")} />
+        <button type={"submit"}>Save</button>
+      </form>
+    </div>
+  );
+};
 
 export default Component;

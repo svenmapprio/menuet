@@ -4,7 +4,7 @@ import {
   jsonObjectFrom,
   jsonArrayFrom,
 } from "kysely/helpers/postgres";
-import { GoogleTypes, PublicRoutes } from "./routes";
+import { GetContent, GoogleTypes, PublicRoutes } from "./routes";
 import { RouteHandlers } from "./types";
 import { dbCommon, emitServer, pgEmitter } from "./db";
 import { Content } from "./tables";
@@ -61,6 +61,11 @@ export const routeHandlers: PublicRouteHandlers = {
     },
   },
   get: {
+    beep: async ({ socketId, session }) => {
+      session
+        ? pgEmitter.to(session.user.id.toString()).emit("boop")
+        : pgEmitter.to(socketId).emit("boop");
+    },
     session: async ({ trx, session }) => {
       return session ?? undefined;
     },
@@ -68,11 +73,34 @@ export const routeHandlers: PublicRouteHandlers = {
       await trx
         .selectFrom("post")
         .select((s) => [
-          "post.created",
-          "post.description",
-          "post.id",
-          "post.name",
-          sql<Content[]>`array_agg(row_to_json(c) order by c.id desc)`.as(
+          jsonObjectFrom(
+            s
+              .selectFrom("post as subPost")
+              .select([
+                "subPost.id",
+                "subPost.created",
+                "subPost.description",
+                "subPost.placeId",
+              ])
+              .whereRef("subPost.id", "=", "post.id")
+          ).as("post"),
+          jsonObjectFrom(
+            s
+              .selectFrom("place as subPlace")
+              .select([
+                "subPlace.country",
+                "subPlace.email",
+                "subPlace.googlePlaceId",
+                "subPlace.id",
+                "subPlace.instagram",
+                "subPlace.internalStatus",
+                "subPlace.name",
+                "subPlace.street",
+                "subPlace.city",
+              ])
+              .whereRef("subPlace.id", "=", "post.placeId")
+          ).as("place"),
+          sql<GetContent[]>`array_agg(row_to_json(c) order by c.id desc)`.as(
             "content"
           ),
         ])
@@ -136,13 +164,24 @@ export const routeHandlers: PublicRouteHandlers = {
             id: sq.ref("conversation.id"),
           }).as("conversation"),
           sql<number>`count(distinct m.id)::int`.as("messagesCount"),
-          jsonBuildObject({
-            id: sq.ref("post.id"),
-            name: sq.ref("post.name"),
-            created: sq.ref("post.created"),
-            description: sq.ref("post.description"),
-            relation: sq.ref("up.relation"),
-          }).as("post"),
+          jsonObjectFrom(
+            sq
+              .selectFrom("post as subPost")
+              .select((ssq) => [
+                "subPost.id",
+                "subPost.created",
+                "subPost.description",
+                "subPost.placeId",
+                "up.relation",
+                jsonObjectFrom(
+                  ssq
+                    .selectFrom("place as subsubPlace")
+                    .select(["subsubPlace.id", "subsubPlace.name"])
+                    .whereRef("subsubPlace.id", "=", "subPost.placeId")
+                ).as("place"),
+              ])
+              .whereRef("subPost.id", "=", "post.id")
+          ).as("post"),
           sql<
             { name: string }[]
           >`array_agg(content.name order by content.id desc)`.as("content"),
@@ -172,10 +211,16 @@ export const routeHandlers: PublicRouteHandlers = {
                   ssq
                     .selectFrom("post as inner")
                     .select([
-                      "post.id",
-                      "post.name",
-                      "post.description",
-                      "post.created",
+                      "inner.id",
+                      "inner.description",
+                      "inner.created",
+                      "inner.placeId",
+                      jsonObjectFrom(
+                        ssq
+                          .selectFrom("place as subsubPlace")
+                          .select(["subsubPlace.id", "subsubPlace.name"])
+                          .whereRef("subsubPlace.id", "=", "post.placeId")
+                      ).as("place"),
                     ])
                     .whereRef("inner.id", "=", "post.id")
                 ).as("post"),
@@ -335,13 +380,15 @@ export const routeHandlers: PublicRouteHandlers = {
     post: async ({
       trx,
       session,
-      post: { id, name, description },
+      post: { id, description, placeId },
       content,
     }) => {
       const insert = await trx
         .insertInto("post")
-        .onConflict((oc) => oc.column("id").doUpdateSet({ name, description }))
-        .values({ id, name, description })
+        .onConflict((oc) =>
+          oc.column("id").doUpdateSet({ description, placeId })
+        )
+        .values({ id, description, placeId })
         .returning("id")
         .executeTakeFirstOrThrow();
 

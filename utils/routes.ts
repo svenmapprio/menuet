@@ -127,6 +127,7 @@ export namespace Returns {
       messagesCount: number;
       post: Selectable<Post> & {
         relation: UserPostRelation;
+        place: Pick<Selectable<Place>, "id" | "name">;
       };
       content: { name: string }[];
     }[];
@@ -135,7 +136,9 @@ export namespace Returns {
   export type Chats = {
     user: Pick<Selectable<User>, "id" | "handle">;
     conversation: {
-      post: Selectable<Post>;
+      post: Selectable<Post> & {
+        place: Pick<Selectable<Place>, "id" | "name">;
+      };
       message?: Pick<Selectable<Message>, "id" | "text" | "created" | "userId">;
     };
   }[];
@@ -147,6 +150,7 @@ export namespace Returns {
 
   export type PostDetails = {
     post: Selectable<Post>;
+    place: Selectable<Place>;
     content: GetContent[];
     relations: { relation: UserPostRelation }[];
     conversations: {
@@ -155,16 +159,18 @@ export namespace Returns {
     }[];
   };
 
-  export type PostRow = Selectable<Post> & {
+  export type PostListItem = {
+    post: Selectable<Post>;
+    place: Selectable<Place>;
     content: GetContent[];
   };
 
   export type PlaceDetails = {
-    place: Selectable<Place>,
+    place: Selectable<Place>;
     paragraphs: {
-      paragraph: Selectable<Paragraph>,
-      sources: Selectable<ParagraphUrl>[]
-    }[]
+      paragraph: Selectable<Paragraph>;
+      sources: Selectable<ParagraphUrl>[];
+    }[];
   };
 
   export type PlacePredictions =
@@ -177,7 +183,7 @@ export interface PublicRoutes extends Routes {
     session: RouteInfo<{}, Session | null>;
     users: RouteInfo<{ filter?: UsersFilter }, UsersListItem[]>;
     shareUsers: RouteInfo<{ postId: number }, ShareUsersListItem[]>;
-    posts: RouteInfo<{}, Selectable<Post>[]>;
+    posts: RouteInfo<{}, Returns.PostListItem[]>;
     post: RouteInfo<{ postId: number }, Returns.PostDetails | undefined>;
     content: RouteInfo<{ contentId: number }, GetContent | undefined>;
     chats: RouteInfo<void, Returns.Chats>;

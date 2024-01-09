@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import TextInput from "@/components/TextInput";
 import useSessionData from "@/hooks/useSessionData";
@@ -7,7 +7,7 @@ import { Session } from "@/utils/types";
 import Link from "next/link";
 import { FC, ReactElement, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
-import * as yup from 'yup';
+import * as yup from "yup";
 import { Insertable } from "kysely";
 import { User } from "@/utils/tables";
 import { useForm } from "@/utils/form";
@@ -17,8 +17,8 @@ import { useForm } from "@/utils/form";
 // const typedKeys = <T extends Object>(o: T) => Object.keys(o) as (keyof T)[];
 
 // type UseFormFieldsProps<T extends FieldValues> = {
-//     model: DeepPartial<T>, 
-//     schema: yup.ObjectSchema<T>, 
+//     model: DeepPartial<T>,
+//     schema: yup.ObjectSchema<T>,
 //     customFields?: (register: UseFormRegister<T>) => Partial<{[k in keyof T]: ReactElement}>
 // };
 
@@ -28,7 +28,7 @@ import { useForm } from "@/utils/form";
 //         ...form
 //     } = useForm<T>({defaultValues: model, resolver: yupResolver(schema as yup.ObjectSchema<any>)});
 
-//     const defaultFields = Object.fromEntries<ReactElement>(typedKeys(schema.fields).map(f => ([f, <input {...register(f as Path<T>)} />]))) as CompObject<T>; 
+//     const defaultFields = Object.fromEntries<ReactElement>(typedKeys(schema.fields).map(f => ([f, <input {...register(f as Path<T>)} />]))) as CompObject<T>;
 //     const fields: CompObject<T> = {...defaultFields, ...(customFields ? customFields(register) : {})};
 
 //     return {fields, form: {register, ...form}};
@@ -50,53 +50,74 @@ import { useForm } from "@/utils/form";
 //     </form>
 // }
 
-const UserInfo: FC<{session: Session}> = ({session}) => {
-    const {formState: {errors}, register, handleSubmit} = useForm<Insertable<User>>({model: session.user, schema: {
-        handle: yup.string().min(5).required(),
-        firstName: yup.string().required(),
-        lastName: yup.string().nullable().transform(value => value || null),
-    }});
+const UserInfo: FC<{ session: Session }> = ({ session }) => {
+  const {
+    formState: { errors },
+    register,
+    handleSubmit,
+  } = useForm<Insertable<User>>({
+    model: session.user,
+    schema: {
+      handle: yup.string().min(5).required(),
+      firstName: yup.string().required(),
+      lastName: yup
+        .string()
+        .nullable()
+        .transform((value) => value || null),
+    },
+  });
 
-    const putUser = useMutation({
-        mutationFn: domains.public.put.user,
-    });
+  const putUser = useMutation({
+    mutationFn: domains.public.put.user,
+  });
 
-    const postsData = useQuery({queryFn: () => domains.public.get.posts({}), queryKey: 'posts'});
+  const postsData = useQuery({
+    queryFn: () => domains.public.get.posts({}),
+    queryKey: "posts",
+  });
 
-    const handleData = handleSubmit(data => {
-        putUser.mutate({user: data });
-    });
+  const handleData = handleSubmit((data) => {
+    putUser.mutate({ user: data, defaultHandle: false });
+  });
 
-    return (
-        <>
-            <form onSubmit={handleData}>
-                <input {...register('handle')} />
-                <p>{errors.handle?.message}</p>
-                <input {...register('firstName')} />
-                <p>{errors.firstName?.message}</p>
-                <input {...register('lastName')} />
-                <p>{errors.lastName?.message}</p>
-                <button type={"submit"}>Save</button>
-            </form>
-            <button >
-                <Link href={'/post/edit/new'}>
-                    Make a new post
-                </Link>
-            </button>
-            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start'}}>
-                <h2>Posts</h2>
-                {
-                    postsData.data?.map(p => <Link href={`/post/view/${p.id}`} key={p.id}>{p.name}</Link>)
-                }
-            </div>
-        </>
-    )
-}
+  return (
+    <>
+      <form onSubmit={handleData}>
+        <input {...register("handle")} />
+        <p>{errors.handle?.message}</p>
+        <input {...register("firstName")} />
+        <p>{errors.firstName?.message}</p>
+        <input {...register("lastName")} />
+        <p>{errors.lastName?.message}</p>
+        <button type={"submit"}>Save</button>
+      </form>
+      <button>
+        <Link href={"/post/edit/new"}>Make a new post</Link>
+      </button>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+        }}
+      >
+        <h2>Posts</h2>
+        {postsData.data?.map((p) => (
+          <Link href={`/post/view/${p.post.id}`} key={p.post.id}>
+            {p.place.name}
+          </Link>
+        ))}
+      </div>
+    </>
+  );
+};
 
 const UserProfile: FC = () => {
-    const sessionData = useSessionData();
+  const sessionData = useSessionData();
 
-    return sessionData.isSuccess && sessionData.data ? <UserInfo session={sessionData.data} /> : null;
-}
+  return sessionData.isSuccess && sessionData.data ? (
+    <UserInfo session={sessionData.data} />
+  ) : null;
+};
 
 export default UserProfile;

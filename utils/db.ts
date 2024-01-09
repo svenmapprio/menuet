@@ -222,13 +222,31 @@ export const dbCommon = {
           sq
             .selectFrom("post")
             .select([
-              "post.name",
               "post.id",
               "post.created",
               "post.description",
+              "post.placeId",
             ])
             .whereRef("post.id", "=", "outer.id")
         ).as("post"),
+        //#region place
+        jsonObjectFrom(
+          sq
+            .selectFrom("place as subPlace")
+            .select([
+              "subPlace.id",
+              "subPlace.name",
+              "subPlace.street",
+              "subPlace.city",
+              "subPlace.country",
+              "subPlace.email",
+              "subPlace.instagram",
+              "subPlace.internalStatus",
+              "subPlace.googlePlaceId",
+            ])
+            .whereRef("subPlace.id", "=", "outer.placeId")
+        ).as("place"),
+        //#endregion place
         //#endregion post
         //#region relations
         jsonArrayFrom(

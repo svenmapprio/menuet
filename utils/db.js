@@ -172,12 +172,28 @@ exports.dbCommon = {
             (0, postgres_1.jsonObjectFrom)(sq
                 .selectFrom("post")
                 .select([
-                "post.name",
                 "post.id",
                 "post.created",
                 "post.description",
+                "post.placeId",
             ])
                 .whereRef("post.id", "=", "outer.id")).as("post"),
+            //#region place
+            (0, postgres_1.jsonObjectFrom)(sq
+                .selectFrom("place as subPlace")
+                .select([
+                "subPlace.id",
+                "subPlace.name",
+                "subPlace.street",
+                "subPlace.city",
+                "subPlace.country",
+                "subPlace.email",
+                "subPlace.instagram",
+                "subPlace.internalStatus",
+                "subPlace.googlePlaceId",
+            ])
+                .whereRef("subPlace.id", "=", "outer.placeId")).as("place"),
+            //#endregion place
             //#endregion post
             //#region relations
             (0, postgres_1.jsonArrayFrom)(sq
