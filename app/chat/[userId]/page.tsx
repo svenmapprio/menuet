@@ -1,5 +1,4 @@
 import { parseIntForce } from "@/utils/helpers";
-import { fecthCommon } from "@/utils/serverUtils";
 import { notFound } from "next/navigation";
 import Chat from "./Chat";
 

@@ -383,6 +383,7 @@ export const routeHandlers: PublicRouteHandlers = {
       trx,
       session,
       post: { id, description, placeId },
+      users = [],
       content,
     }) => {
       const insert = await trx
@@ -416,6 +417,29 @@ export const routeHandlers: PublicRouteHandlers = {
           .insertInto("postContent")
           .values(content.map((c) => ({ contentId: c.id, postId: insert.id })))
           .onConflict((oc) => oc.columns(["contentId", "postId"]).doNothing())
+          .execute();
+      }
+
+      await trx
+        .deleteFrom("userPost")
+        .where("relation", "=", "consumer")
+        .where("postId", "=", insert.id)
+        .where("userId", "not in", users)
+        .execute();
+
+      if (users.length) {
+        await trx
+          .insertInto("userPost")
+          .values(
+            users.map((u) => ({
+              postId: insert.id,
+              relation: "consumer",
+              userId: u,
+            }))
+          )
+          .onConflict((oc) =>
+            oc.columns(["postId", "userId", "relation"]).doNothing()
+          )
           .execute();
       }
 

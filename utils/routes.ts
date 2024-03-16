@@ -24,6 +24,7 @@ export type GetContent = Pick<Selectable<Content>, "name" | "id">;
 export type PutPost = {
   post: Insertable<Post>;
   content: GetContent[];
+  users?: number[];
 };
 
 export type GetMessage = {
