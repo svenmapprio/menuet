@@ -1,12 +1,17 @@
 import { fecthCommon } from "@/utils/serverUtils";
-import { notFound } from 'next/navigation';
-import PostComponents from 'components/Post';
+import { notFound } from "next/navigation";
+import PostComponents from "components/Post";
 
-export default async function({params: {postId}}: {params: {postId: string}}) {
-    const getPost = await fecthCommon.getPost(postId);
+export const revalidate = 0;
 
-    if(!getPost)
-        return notFound();
+export default async function ({
+  params: { postId },
+}: {
+  params: { postId: string };
+}) {
+  const getPost = await fecthCommon.getPost(postId);
 
-    return <PostComponents.Edit post={getPost} />;
-};
+  if (!getPost) return notFound();
+
+  return <PostComponents.Edit post={getPost} />;
+}

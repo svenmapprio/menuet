@@ -38,6 +38,7 @@ const Component: FC<PropsWithChildren<{ post: Returns.PostDetails }>> = ({
           <ContentView key={c.id} content={c} />
         ))}
       </div>
+      <Link href={`/place/${place.id}`}>{place.name}</Link>
       <div>{place.name}</div>
       <div>{post.description}</div>
       {isOwner && (

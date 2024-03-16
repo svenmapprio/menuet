@@ -69,6 +69,14 @@ const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
   const router = useRouter();
   const [newContent, setNewContent] = useState<typeof content>([]);
   const [allContent, setAllContent] = useState<typeof content>([]);
+  const [selectingPlace, setSelectingPlace] = useState(false);
+  const [placeId, setPlaceId] = useState<number>();
+  const [placeSearchTerm, setPlaceSearchTerm] = useState("");
+  const [placeQuerySearchTerm, setPlaceQuerySearchTerm] = useState("");
+
+  useEffect(() => {
+    setPlaceId(post.placeId);
+  }, [post]);
 
   const {
     handleSubmit,
@@ -94,17 +102,12 @@ const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
       });
       router.replace(`/post/view/${res.id}`);
     }),
-    [post.id, allContent]
+    [post.id, allContent, placeId]
   );
 
   useEffect(() => {
     setAllContent([...content, ...newContent]);
   }, [content, newContent]);
-
-  const [selectingPlace, setSelectingPlace] = useState(false);
-  const [placeId, setPlaceId] = useState<number>(post.placeId);
-  const [placeSearchTerm, setPlaceSearchTerm] = useState("");
-  const [placeQuerySearchTerm, setPlaceQuerySearchTerm] = useState("");
 
   const placeTimeout = useRef<any>();
 
@@ -165,51 +168,51 @@ const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
           setNewContent(newContentNext);
         }}
       />
-      <form onSubmit={handleData}>
-        {!selectingPlace ? (
-          <button onClick={() => setSelectingPlace(true)}>
-            {placeId
-              ? placeDetailsData.isSuccess
-                ? placeDetailsData.data
-                  ? placeDetailsData.data.place.name
-                  : "Place not found"
-                : "Loading place ..."
-              : "Select place"}
-          </button>
-        ) : (
-          <div>
-            <input
-              value={placeSearchTerm}
-              onChange={(e) => setPlaceSearchTerm(e.target.value)}
-            />
-            {placeSearchData.isLoading
-              ? "Searching places ... "
-              : placeSearchData.isSuccess
-              ? placeSearchData.data.map((place) => (
-                  <div style={{ display: "flex" }} key={place.place_id}>
-                    <button
-                      onClick={async () => {
-                        const res = await putPlace.mutateAsync({
-                          description: place.description,
-                          googlePlaceId: place.place_id,
-                          name: place.structured_formatting.main_text,
-                        });
+      {!selectingPlace ? (
+        <button onClick={() => setSelectingPlace(true)}>
+          {placeId
+            ? placeDetailsData.isSuccess
+              ? placeDetailsData.data
+                ? placeDetailsData.data.place.name
+                : "Place not found"
+              : "Loading place ..."
+            : "Select place"}
+        </button>
+      ) : (
+        <div>
+          <input
+            value={placeSearchTerm}
+            onChange={(e) => setPlaceSearchTerm(e.target.value)}
+          />
+          {placeSearchData.isLoading
+            ? "Searching places ... "
+            : placeSearchData.isSuccess
+            ? placeSearchData.data.map((place) => (
+                <div style={{ display: "flex" }} key={place.place_id}>
+                  <button
+                    onClick={async () => {
+                      const res = await putPlace.mutateAsync({
+                        description: place.description,
+                        googlePlaceId: place.place_id,
+                        name: place.structured_formatting.main_text,
+                      });
 
-                        if (res) {
-                          setPlaceId(res.id);
-                          setSelectingPlace(false);
-                        } else {
-                          alert("something went wrong selecting the place");
-                        }
-                      }}
-                    >
-                      <p>{place.description}</p>
-                    </button>
-                  </div>
-                ))
-              : null}
-          </div>
-        )}
+                      if (res) {
+                        setPlaceId(res.id);
+                        setSelectingPlace(false);
+                      } else {
+                        alert("something went wrong selecting the place");
+                      }
+                    }}
+                  >
+                    <p>{place.description}</p>
+                  </button>
+                </div>
+              ))
+            : null}
+        </div>
+      )}
+      <form onSubmit={handleData}>
         <input {...register("description")} />
         <button type={"submit"}>Save</button>
       </form>
