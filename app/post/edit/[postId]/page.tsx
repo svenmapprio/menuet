@@ -4,7 +4,7 @@ import PostComponents from "components/Post";
 
 export const revalidate = 0;
 
-export default async function ({
+export default async function Page({
   params: { postId },
 }: {
   params: { postId: string };

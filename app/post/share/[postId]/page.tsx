@@ -1,13 +1,16 @@
 import { fecthCommon } from "@/utils/serverUtils";
-import { notFound } from 'next/navigation';
-import PostComponents from 'components/Post';
+import { notFound } from "next/navigation";
+import PostComponents from "components/Post";
 import { parseIntForce } from "@/utils/helpers";
 
-export default async function({params: {postId}}: {params: {postId: string}}) {
-    const getPost = await fecthCommon.getPost(postId);
-    
-    if(!getPost)
-        return notFound();
+export default async function Page({
+  params: { postId },
+}: {
+  params: { postId: string };
+}) {
+  const getPost = await fecthCommon.getPost(postId);
 
-    return <PostComponents.Share post={getPost} />;
-};
+  if (!getPost) return notFound();
+
+  return <PostComponents.Share post={getPost} />;
+}
