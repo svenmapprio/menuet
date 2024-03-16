@@ -3,10 +3,10 @@ import { fecthCommon } from "@/utils/serverUtils";
 import { notFound } from "next/navigation";
 import Chat from "./Chat";
 
-export default async function({params}: {params: {userId: string}}){
-    const userId = parseIntForce(params.userId);
-    
-    if(!userId) return notFound();
+export default async function Page({ params }: { params: { userId: string } }) {
+  const userId = parseIntForce(params.userId);
 
-    return <Chat userId={userId} />;
+  if (!userId) return notFound();
+
+  return <Chat userId={userId} />;
 }
