@@ -135,13 +135,16 @@ exports.dbCommon = {
             .leftJoin("friend as other", (join) => join
             .onRef("other.userId", "=", "u.id")
             .on("other.friendId", "=", userId))
-            .select(["u.handle", "u.id"])
-            .select((0, kysely_1.sql) `case 
+            .select((s) => [
+            "u.handle",
+            "u.id",
+            (0, kysely_1.sql) `case 
                 when self.user_id is not null then true else false end
-            `.as("self"))
-            .select((0, kysely_1.sql) `case 
+            `.as("self"),
+            (0, kysely_1.sql) `case 
                 when other.user_id is not null then true else false end
-            `.as("other"))
+            `.as("other"),
+        ])
             .$if(!!userId, (qb) => qb.where("u.id", "<>", userId));
     },
     getShareUsers: (trx, userId, postId) => {
@@ -158,11 +161,20 @@ exports.dbCommon = {
             .where("other.userId", "is not", null);
         return q.execute();
     },
-    getUsersWithStatus: (trx, userId = null, filter = "all", searchTerm = "") => {
+    getUsersWithStatus: (trx, userId = null, searchTerm = "") => {
         const q = exports.dbCommon
             .getUsersBaseQuery(trx, userId)
             .where("u.handle", "ilike", `%${searchTerm}%`);
         return q.execute();
+    },
+    getFriendUsers: (trx, userId) => {
+        return trx
+            .selectFrom("user as u")
+            .innerJoin(exports.dbCommon.getUsersBaseQuery(trx, userId).as("ustatus"), "ustatus.id", "u.id")
+            .select(["u.id", "u.handle", "ustatus.self", "ustatus.other"])
+            .where("ustatus.self", "=", true)
+            .where("ustatus.other", "=", true)
+            .execute();
     },
     getPost: (trx, postId, userId) => __awaiter(void 0, void 0, void 0, function* () {
         const details = yield trx
@@ -256,6 +268,54 @@ exports.dbCommon = {
                             //#endregion conversations.messages
                  */
         return details;
+    }),
+    sharePost: (trx, postId, userId, session) => __awaiter(void 0, void 0, void 0, function* () {
+        yield trx
+            .insertInto("userPost")
+            .values({ userId, postId, relation: "consumer" })
+            .onConflict((oc) => oc.columns(["postId", "userId", "relation"]).doNothing())
+            .execute();
+        let conversation = yield trx
+            .selectFrom("conversation")
+            .innerJoin("conversationUser as cua", (join) => join
+            .onRef("cua.conversationId", "=", "conversation.id")
+            .on("cua.userId", "=", session.user.id))
+            .innerJoin("conversationUser as cub", (join) => join
+            .onRef("cub.conversationId", "=", "conversation.id")
+            .on("cub.userId", "=", userId))
+            .select("conversation.id")
+            .where("conversation.postId", "=", postId)
+            .executeTakeFirst();
+        if (!conversation) {
+            conversation = yield trx
+                .insertInto("conversation")
+                .values({ postId })
+                .returning("id")
+                .executeTakeFirstOrThrow();
+            yield trx
+                .insertInto("conversationUser")
+                .values([
+                { conversationId: conversation.id, userId: session.user.id },
+                { conversationId: conversation.id, userId },
+            ])
+                .onConflict((oc) => oc.columns(["conversationId", "userId"]).doNothing())
+                .execute();
+        }
+        const conversationId = conversation.id;
+        yield trx
+            .insertInto("latestFriendConversation")
+            .values({ conversationId, friendId: userId, userId: session.user.id })
+            .onConflict((oc) => oc.columns(["friendId", "userId"]).doUpdateSet({ conversationId }))
+            .execute();
+        exports.pgEmitter
+            .to(session.user.id.toString())
+            .emit("mutation", ["shareUsers", postId]);
+        exports.pgEmitter
+            .to(userId.toString())
+            .to(session.user.id.toString())
+            .emit("mutation", "chats");
+        exports.pgEmitter.to(session.user.id.toString()).emit("mutation", ["chat", userId]);
+        exports.pgEmitter.to(userId.toString()).emit("mutation", ["chat", session.user.id]);
     }),
 };
 var ErrorCode;

@@ -214,7 +214,7 @@ const queryHandlers: handlerObject<SocketQuery> = {
     const res = await db.transaction().execute(async (trx) => {
       const session = await dbCommon.getSessionBy(trx, { socketId });
 
-      return dbCommon.getUsersWithStatus(trx, session?.user.id, "all", term);
+      return dbCommon.getUsersWithStatus(trx, session?.user.id, term);
     });
 
     return res;
