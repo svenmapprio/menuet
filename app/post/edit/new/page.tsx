@@ -1,12 +1,11 @@
 import { FC } from "react";
 import PostComponents from "components/Post";
-import { PutPost } from "@/utils/routes";
+import { PostModel } from "@/components/Post/Edit";
 
-const postDefaults = (): PutPost => ({
-  post: {
-    placeId: 0,
-  },
+const postDefaults = (): PostModel => ({
   content: [],
+  conversations: [],
+  post: {},
 });
 
 const Page: FC = () => <PostComponents.Edit post={postDefaults()} />;

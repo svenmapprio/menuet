@@ -116,7 +116,9 @@ export const routeHandlers: PublicRouteHandlers = {
         .execute(),
     users: async ({ trx, session, filter = "all" }) => {
       return filter === "friend"
-        ? dbCommon.getFriendUsers(trx, session.user.id)
+        ? session
+          ? dbCommon.getFriendUsers(trx, session.user.id)
+          : []
         : dbCommon.getUsersWithStatus(trx, session?.user.id, filter);
     },
     shareUsers: async ({ trx, session, postId }) => {

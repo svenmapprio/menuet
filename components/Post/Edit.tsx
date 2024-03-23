@@ -59,8 +59,21 @@ const ContentView: FC<{ content: GetContent }> = ({
   );
 };
 
+export type PostModel = {
+  content: { id: number; name: string }[];
+  post: {
+    id?: number;
+    placeId?: number;
+  };
+  conversations: {
+    user: {
+      id: number;
+    };
+  }[];
+};
+
 const Component: FC<{
-  post: Returns.PostDetails;
+  post: PostModel;
 }> = ({ post: { content, post, conversations } }) => {
   const savePost = useMutation({
     mutationFn: domains.public.put.post,
