@@ -6,7 +6,7 @@ import {
 } from "kysely/helpers/postgres";
 import { GetContent, GoogleTypes, PublicRoutes } from "./routes";
 import { RouteHandlers } from "./types";
-import { dbCommon, emitServer, pgEmitter } from "./db";
+import { db, dbCommon, emitServer, pgEmitter } from "./db";
 import { Content } from "./tables";
 import axios from "axios";
 import { spawn } from "child_process";
@@ -115,7 +115,9 @@ export const routeHandlers: PublicRouteHandlers = {
         .groupBy("post.id")
         .execute(),
     users: async ({ trx, session, filter = "all" }) => {
-      return dbCommon.getUsersWithStatus(trx, session?.user.id, filter);
+      return filter === "friend"
+        ? dbCommon.getFriendUsers(trx, session.user.id)
+        : dbCommon.getUsersWithStatus(trx, session?.user.id, filter);
     },
     shareUsers: async ({ trx, session, postId }) => {
       return dbCommon.getShareUsers(trx, session.user.id, postId);
@@ -427,21 +429,8 @@ export const routeHandlers: PublicRouteHandlers = {
         .where("userId", "not in", users)
         .execute();
 
-      if (users.length) {
-        await trx
-          .insertInto("userPost")
-          .values(
-            users.map((u) => ({
-              postId: insert.id,
-              relation: "consumer",
-              userId: u,
-            }))
-          )
-          .onConflict((oc) =>
-            oc.columns(["postId", "userId", "relation"]).doNothing()
-          )
-          .execute();
-      }
+      for (let i = 0; i < users.length; i++)
+        await dbCommon.sharePost(trx, insert.id, users[i], session);
 
       const usersWithAccess = await trx
         .selectFrom("userPost")
@@ -635,73 +624,8 @@ export const routeHandlers: PublicRouteHandlers = {
 
       return { id: placeId };
     },
-    userPost: async ({ trx, session, postId, userId, relation }) => {
-      await trx
-        .insertInto("userPost")
-        .values({ userId, postId, relation })
-        .onConflict((oc) =>
-          oc.columns(["postId", "userId", "relation"]).doNothing()
-        )
-        .execute();
-
-      let conversation = await trx
-        .selectFrom("conversation")
-        .innerJoin("conversationUser as cua", (join) =>
-          join
-            .onRef("cua.conversationId", "=", "conversation.id")
-            .on("cua.userId", "=", session.user.id)
-        )
-        .innerJoin("conversationUser as cub", (join) =>
-          join
-            .onRef("cub.conversationId", "=", "conversation.id")
-            .on("cub.userId", "=", userId)
-        )
-        .select("conversation.id")
-        .where("conversation.postId", "=", postId)
-        .executeTakeFirst();
-
-      if (!conversation) {
-        conversation = await trx
-          .insertInto("conversation")
-          .values({ postId })
-          .returning("id")
-          .executeTakeFirstOrThrow();
-
-        await trx
-          .insertInto("conversationUser")
-          .values([
-            { conversationId: conversation.id, userId: session.user.id },
-            { conversationId: conversation.id, userId },
-          ])
-          .onConflict((oc) =>
-            oc.columns(["conversationId", "userId"]).doNothing()
-          )
-          .execute();
-      }
-
-      const conversationId = conversation.id;
-
-      await trx
-        .insertInto("latestFriendConversation")
-        .values({ conversationId, friendId: userId, userId: session.user.id })
-        .onConflict((oc) =>
-          oc.columns(["friendId", "userId"]).doUpdateSet({ conversationId })
-        )
-        .execute();
-
-      pgEmitter
-        .to(session.user.id.toString())
-        .emit("mutation", ["shareUsers", postId]);
-      pgEmitter
-        .to(userId.toString())
-        .to(session.user.id.toString())
-        .emit("mutation", "chats");
-      pgEmitter
-        .to(session.user.id.toString())
-        .emit("mutation", ["chat", userId]);
-      pgEmitter
-        .to(userId.toString())
-        .emit("mutation", ["chat", session.user.id]);
+    userPost: async ({ trx, session, postId, userId }) => {
+      await dbCommon.sharePost(trx, postId, userId, session);
     },
   },
 };

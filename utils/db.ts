@@ -6,6 +6,7 @@ import {
   PostgresDialect,
   sql,
   Transaction,
+  ExpressionBuilder,
 } from "kysely";
 import { Emission, EmissionWrapper, Session, UsersFilter } from "./types";
 import { TokenPayload } from "google-auth-library";
@@ -169,17 +170,16 @@ export const dbCommon = {
           .onRef("other.userId", "=", "u.id")
           .on("other.friendId", "=", userId)
       )
-      .select(["u.handle", "u.id"])
-      .select(
+      .select((s) => [
+        "u.handle",
+        "u.id",
         sql<boolean>`case 
                 when self.user_id is not null then true else false end
-            `.as("self")
-      )
-      .select(
+            `.as("self"),
         sql<boolean>`case 
                 when other.user_id is not null then true else false end
-            `.as("other")
-      )
+            `.as("other"),
+      ])
       .$if(!!userId, (qb) => qb.where("u.id", "<>", userId));
   },
   getShareUsers: (trx: Transaction<DB>, userId: number, postId: number) => {
@@ -204,7 +204,6 @@ export const dbCommon = {
   getUsersWithStatus: (
     trx: Transaction<DB>,
     userId: number | null = null,
-    filter: UsersFilter = "all",
     searchTerm = ""
   ) => {
     const q = dbCommon
@@ -212,6 +211,19 @@ export const dbCommon = {
       .where("u.handle", "ilike", `%${searchTerm}%`);
 
     return q.execute();
+  },
+  getFriendUsers: (trx: Transaction<DB>, userId: number) => {
+    return trx
+      .selectFrom("user as u")
+      .innerJoin(
+        dbCommon.getUsersBaseQuery(trx, userId).as("ustatus"),
+        "ustatus.id",
+        "u.id"
+      )
+      .select(["u.id", "u.handle", "ustatus.self", "ustatus.other"])
+      .where("ustatus.self", "=", true)
+      .where("ustatus.other", "=", true)
+      .execute();
   },
   getPost: async (trx: Transaction<DB>, postId: number, userId: number) => {
     const details: Returns.PostDetails = await trx
@@ -327,6 +339,75 @@ export const dbCommon = {
              */
 
     return details;
+  },
+  sharePost: async (
+    trx: Transaction<DB>,
+    postId: number,
+    userId: number,
+    session: Session
+  ) => {
+    await trx
+      .insertInto("userPost")
+      .values({ userId, postId, relation: "consumer" })
+      .onConflict((oc) =>
+        oc.columns(["postId", "userId", "relation"]).doNothing()
+      )
+      .execute();
+
+    let conversation = await trx
+      .selectFrom("conversation")
+      .innerJoin("conversationUser as cua", (join) =>
+        join
+          .onRef("cua.conversationId", "=", "conversation.id")
+          .on("cua.userId", "=", session.user.id)
+      )
+      .innerJoin("conversationUser as cub", (join) =>
+        join
+          .onRef("cub.conversationId", "=", "conversation.id")
+          .on("cub.userId", "=", userId)
+      )
+      .select("conversation.id")
+      .where("conversation.postId", "=", postId)
+      .executeTakeFirst();
+
+    if (!conversation) {
+      conversation = await trx
+        .insertInto("conversation")
+        .values({ postId })
+        .returning("id")
+        .executeTakeFirstOrThrow();
+
+      await trx
+        .insertInto("conversationUser")
+        .values([
+          { conversationId: conversation.id, userId: session.user.id },
+          { conversationId: conversation.id, userId },
+        ])
+        .onConflict((oc) =>
+          oc.columns(["conversationId", "userId"]).doNothing()
+        )
+        .execute();
+    }
+
+    const conversationId = conversation.id;
+
+    await trx
+      .insertInto("latestFriendConversation")
+      .values({ conversationId, friendId: userId, userId: session.user.id })
+      .onConflict((oc) =>
+        oc.columns(["friendId", "userId"]).doUpdateSet({ conversationId })
+      )
+      .execute();
+
+    pgEmitter
+      .to(session.user.id.toString())
+      .emit("mutation", ["shareUsers", postId]);
+    pgEmitter
+      .to(userId.toString())
+      .to(session.user.id.toString())
+      .emit("mutation", "chats");
+    pgEmitter.to(session.user.id.toString()).emit("mutation", ["chat", userId]);
+    pgEmitter.to(userId.toString()).emit("mutation", ["chat", session.user.id]);
   },
 };
 

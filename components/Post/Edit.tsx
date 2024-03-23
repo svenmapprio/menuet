@@ -2,13 +2,11 @@
 
 import { baseUrl, domains } from "@/utils/fetch";
 import { useForm } from "@/utils/form";
-import { PutPost } from "@/utils/routes";
+import { Returns } from "@/utils/routes";
 import { Post } from "@/utils/tables";
-import { Routes } from "@/utils/types";
 import { GetContent } from "@/utils/routes";
 import axios from "axios";
 import { Insertable } from "kysely";
-import { UnwrapPromise } from "next/dist/lib/coalesced-function";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
@@ -61,7 +59,9 @@ const ContentView: FC<{ content: GetContent }> = ({
   );
 };
 
-const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
+const Component: FC<{
+  post: Returns.PostDetails;
+}> = ({ post: { content, post, conversations } }) => {
   const savePost = useMutation({
     mutationFn: domains.public.put.post,
     mutationKey: ["post", post.id],
@@ -69,6 +69,7 @@ const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
   const router = useRouter();
   const [newContent, setNewContent] = useState<typeof content>([]);
   const [allContent, setAllContent] = useState<typeof content>([]);
+  const [nextUsers, setNextUsers] = useState<number[]>([]);
   const [selectingPlace, setSelectingPlace] = useState(false);
   const [placeId, setPlaceId] = useState<number>();
   const [placeSearchTerm, setPlaceSearchTerm] = useState("");
@@ -77,6 +78,10 @@ const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
   useEffect(() => {
     setPlaceId(post.placeId);
   }, [post]);
+
+  useEffect(() => {
+    setNextUsers(conversations.map((c) => c.user.id));
+  }, [conversations]);
 
   const {
     handleSubmit,
@@ -99,6 +104,7 @@ const Component: FC<{ post: PutPost }> = ({ post: { content, post } }) => {
       const res = await savePost.mutateAsync({
         post: { id: post.id, placeId: placeId, ...data },
         content: allContent,
+        users: nextUsers,
       });
       router.replace(`/post/view/${res.id}`);
     }),

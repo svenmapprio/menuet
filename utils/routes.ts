@@ -121,6 +121,8 @@ export namespace GoogleTypes {
 }
 
 export namespace Returns {
+  export type UserItem = Pick<Selectable<User>, "id" | "handle">;
+
   export type ChatDetails = {
     user: Pick<Selectable<User>, "id" | "handle">;
     conversations: {
@@ -154,6 +156,7 @@ export namespace Returns {
     place: Selectable<Place>;
     content: GetContent[];
     relations: { relation: UserPostRelation }[];
+
     conversations: {
       id: number;
       user: Pick<Selectable<User>, "id" | "handle">;
