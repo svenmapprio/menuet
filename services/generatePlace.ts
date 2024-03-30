@@ -60,14 +60,14 @@ const main = async () => {
 
   const openai = new OpenAI();
 
-  const content = `Given this place: "${description}", can you fill out the fields of a JSON with the following typescript type:
+  const content = `Given this place: "${description}", can you fill out the fields of a JSON with the following pseudo typescript type:
       \`\`\`ts
       type PlaceDescriptionParagraph = {
         text: string,
-        sources: string[]
+        sources: string[1-5]
       }
 
-      type PlaceDescription = [PlaceDescriptionParagraph]
+      type PlaceDescription = PlaceDescriptionParagraph[2-3]
 
       type Place = {
         name: string,
@@ -76,11 +76,10 @@ const main = async () => {
         country: string,
         instagramHandle: string | undefined,
         businessEmail: string | undefined
-        description: placeDescription
+        description: PlaceDescription
+        tags: string[3-5]
       }
       \`\`\`
-
-      The description should be no more than 2-3 paragraphs. Thanks a lot!
       `;
 
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
