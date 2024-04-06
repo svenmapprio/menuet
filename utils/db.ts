@@ -313,31 +313,6 @@ export const dbCommon = {
       .where("outer.id", "=", postId)
       .executeTakeFirstOrThrow();
 
-    /*
-             //#region conversations.messages
-                        jsonArrayFrom(
-                            ssq.selectFrom('message as messageOuter')
-                            .select(sssq => [
-                                //#region conversations.messages.message
-                                jsonObjectFrom(
-                                    sssq.selectFrom('message')
-                                    .select(['message.id', 'message.text', 'message.created', 'message.userId', 'message.conversationId'])
-                                    .whereRef('message.id', '=', 'messageOuter.id')
-                                ).as('message'),
-                                //#endregion conversations.messages.message
-                                //#region conversations.messages.user
-                                jsonObjectFrom(
-                                    sssq.selectFrom('user')
-                                    .select(['user.id', 'user.handle'])
-                                    .whereRef('user.id', '=', 'messageOuter.userId')
-                                ).as('user'),
-                                //#endregion conversations.messages.user
-                            ])
-                            .whereRef('messageOuter.conversationId', '=', 'conversationOuter.id')
-                        ).as('messages')
-                        //#endregion conversations.messages
-             */
-
     return details;
   },
   sharePost: async (

@@ -90,7 +90,7 @@ export namespace OpenaiTypes {
     sources: string[];
   };
 
-  export type PlaceDescription = [PlaceDescriptionParagraph];
+  export type PlaceDescription = PlaceDescriptionParagraph[];
 
   export type Place = {
     name: string;
@@ -100,6 +100,7 @@ export namespace OpenaiTypes {
     instagramHandle: string | undefined;
     businessEmail: string | undefined;
     description: PlaceDescription;
+    tags: string[];
   };
 }
 
