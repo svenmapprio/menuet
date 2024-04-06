@@ -10,7 +10,6 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
-  compress: false,
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
