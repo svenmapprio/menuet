@@ -20,11 +20,11 @@ const nextConfig = {
   },
   output: "standalone",
   reactStrictMode: true,
-  webpack(config) {
-    config.optimization.minimize = false;
+  // webpack(config) {
+  //   config.optimization.minimize = false;
     
-    return config;
-  },
+  //   return config;
+  // },
   images: {
     remotePatterns: [
       {
