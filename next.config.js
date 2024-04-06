@@ -10,6 +10,7 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
+  compress: false,
   typescript: {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
@@ -19,6 +20,11 @@ const nextConfig = {
   },
   output: "standalone",
   reactStrictMode: true,
+  webpack(config) {
+    config.optimization.minimize = false;
+    
+    return config;
+  },
   images: {
     remotePatterns: [
       {

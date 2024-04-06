@@ -15,10 +15,12 @@ export interface PublicRouteHandlers extends RouteHandlers<PublicRoutes> {}
 
 export const routeHandlers: PublicRouteHandlers = {
   delete: {
-    session: async ({ req, headers }) => {
+    session: async ({ req, headers, session }) => {
       headers[
         "Set-Cookie"
       ] = `refresh_token=unset;Secure; HttpOnly; SameSite=None; Path=/; Max-Age=0;`;
+
+      pgEmitter.to(session.user.id.toString()).emit("session");
     },
     friend: async ({ trx, session, userId }) => {
       const sourceUserId = session.user.id;
