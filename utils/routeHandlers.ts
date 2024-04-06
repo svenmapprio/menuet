@@ -332,7 +332,6 @@ export const routeHandlers: PublicRouteHandlers = {
       const parametersObject = {
         input: name,
         types: "food",
-        location: "55.6802678,12.5813901",
         radius: "1",
         // sessionToken: randomUUID(),
         key: process.env.GOOGLE_PLACES_KEY,
