@@ -240,7 +240,9 @@ export const dbCommon = {
               "post.placeId",
             ])
             .whereRef("post.id", "=", "outer.id")
-        ).as("post"),
+        )
+          .$notNull()
+          .as("post"),
         //#region place
         jsonObjectFrom(
           sq
@@ -258,7 +260,9 @@ export const dbCommon = {
               "subPlace.created",
             ])
             .whereRef("subPlace.id", "=", "outer.placeId")
-        ).as("place"),
+        )
+          .$notNull()
+          .as("place"),
         //#endregion place
         //#endregion post
         //#region relations
@@ -302,7 +306,9 @@ export const dbCommon = {
                     "=",
                     "conversationOuter.id"
                   )
-              ).as("user"),
+              )
+                .$notNull()
+                .as("user"),
               //#endregion conversations.user
             ])
             .whereRef("conversationOuter.postId", "=", "outer.id")

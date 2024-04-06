@@ -83,7 +83,9 @@ export const routeHandlers: PublicRouteHandlers = {
                 "subPost.placeId",
               ])
               .whereRef("subPost.id", "=", "post.id")
-          ).as("post"),
+          )
+            .$notNull()
+            .as("post"),
           jsonObjectFrom(
             s
               .selectFrom("place as subPlace")
@@ -100,7 +102,9 @@ export const routeHandlers: PublicRouteHandlers = {
                 "subPlace.created",
               ])
               .whereRef("subPlace.id", "=", "post.placeId")
-          ).as("place"),
+          )
+            .$notNull()
+            .as("place"),
           sql<GetContent[]>`array_agg(row_to_json(c) order by c.id desc)`.as(
             "content"
           ),
@@ -167,7 +171,9 @@ export const routeHandlers: PublicRouteHandlers = {
         .select((sq) => [
           jsonBuildObject({
             id: sq.ref("conversation.id"),
-          }).as("conversation"),
+          })
+            .$notNull()
+            .as("conversation"),
           sql<number>`count(distinct m.id)::int`.as("messagesCount"),
           jsonObjectFrom(
             sq
@@ -183,10 +189,14 @@ export const routeHandlers: PublicRouteHandlers = {
                     .selectFrom("place as subsubPlace")
                     .select(["subsubPlace.id", "subsubPlace.name"])
                     .whereRef("subsubPlace.id", "=", "subPost.placeId")
-                ).as("place"),
+                )
+                  .$notNull()
+                  .as("place"),
               ])
               .whereRef("subPost.id", "=", "post.id")
-          ).as("post"),
+          )
+            .$notNull()
+            .as("post"),
           sql<
             { name: string }[]
           >`array_agg(content.name order by content.id desc)`.as("content"),
@@ -207,7 +217,9 @@ export const routeHandlers: PublicRouteHandlers = {
               .selectFrom("user")
               .select(["id", "handle"])
               .whereRef("user.id", "=", "lfc.friendId")
-          ).as("user"),
+          )
+            .$notNull()
+            .as("user"),
           jsonObjectFrom(
             sq
               .selectFrom("post")
@@ -225,10 +237,14 @@ export const routeHandlers: PublicRouteHandlers = {
                           .selectFrom("place as subsubPlace")
                           .select(["subsubPlace.id", "subsubPlace.name"])
                           .whereRef("subsubPlace.id", "=", "post.placeId")
-                      ).as("place"),
+                      )
+                        .$notNull()
+                        .as("place"),
                     ])
                     .whereRef("inner.id", "=", "post.id")
-                ).as("post"),
+                )
+                  .$notNull()
+                  .as("post"),
                 jsonObjectFrom(
                   ssq
                     .selectFrom("message")
@@ -239,10 +255,14 @@ export const routeHandlers: PublicRouteHandlers = {
                       "message.userId",
                     ])
                     .whereRef("message.id", "=", "conversation.latestMessageId")
-                ).as("message"),
+                )
+                  .$notNull()
+                  .as("message"),
               ])
               .whereRef("post.id", "=", "conversation.postId")
-          ).as("conversation"),
+          )
+            .$notNull()
+            .as("conversation"),
         ])
         .where("lfc.userId", "=", session.user.id);
 
@@ -290,13 +310,17 @@ export const routeHandlers: PublicRouteHandlers = {
                 "inner.userId",
               ])
               .whereRef("inner.id", "=", "outer.id")
-          ).as("message"),
+          )
+            .$notNull()
+            .as("message"),
           jsonObjectFrom(
             sq
               .selectFrom("user")
               .select(["user.id", "user.handle"])
               .whereRef("user.id", "=", "outer.userId")
-          ).as("user"),
+          )
+            .$notNull()
+            .as("user"),
         ])
         .where("outer.conversationId", "=", conversationId)
         .execute();
@@ -345,7 +369,9 @@ export const routeHandlers: PublicRouteHandlers = {
                 "created",
               ])
               .whereRef("subPlace.id", "=", "place.id")
-          ).as("place"),
+          )
+            .$notNull()
+            .as("place"),
           jsonArrayFrom(
             sub
               .selectFrom("paragraph as subParagraph")
@@ -360,7 +386,9 @@ export const routeHandlers: PublicRouteHandlers = {
                       "subsubParagraph.type",
                     ])
                     .whereRef("subsubParagraph.id", "=", "subParagraph.id")
-                ).as("paragraph"),
+                )
+                  .$notNull()
+                  .as("paragraph"),
                 jsonArrayFrom(
                   subsub
                     .selectFrom("paragraphUrl as subsubParagraphUrl")
