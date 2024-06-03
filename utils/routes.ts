@@ -186,7 +186,7 @@ export interface PublicRoutes extends Routes {
   get: {
     beep: RouteInfo<{ socketId: string }>;
     session: RouteInfo<{}, Session | null>;
-    users: RouteInfo<{ filter?: UsersFilter }, UsersListItem[]>;
+    users: RouteInfo<{ term?: string; filter?: UsersFilter }, UsersListItem[]>;
     shareUsers: RouteInfo<{ postId: number }, ShareUsersListItem[]>;
     posts: RouteInfo<{}, Returns.PostListItem[]>;
     post: RouteInfo<{ postId: number }, Returns.PostDetails | undefined>;

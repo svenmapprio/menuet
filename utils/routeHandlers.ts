@@ -118,12 +118,12 @@ export const routeHandlers: PublicRouteHandlers = {
         .where("userPost.userId", "=", session.user.id)
         .groupBy("post.id")
         .execute(),
-    users: async ({ trx, session, filter = "all" }) => {
+    users: async ({ trx, session, filter = "all", term }) => {
       return filter === "friend"
         ? session
-          ? dbCommon.getFriendUsers(trx, session.user.id)
+          ? dbCommon.getFriendUsers(trx, session.user.id, term)
           : []
-        : dbCommon.getUsersWithStatus(trx, session?.user.id);
+        : dbCommon.getUsers(trx, session?.user.id, term);
     },
     shareUsers: async ({ trx, session, postId }) => {
       return dbCommon.getShareUsers(trx, session.user.id, postId);

@@ -159,7 +159,11 @@ export const dbCommon = {
 
     return session;
   },
-  getUsersBaseQuery: (trx: Transaction<DB>, userId: number | null) => {
+  getUsersBaseQuery: (
+    trx: Transaction<DB>,
+    userId: number | null,
+    searchTerm?: string
+  ) => {
     return trx
       .selectFrom(["user as u"])
       .leftJoin("friend as self", (join) =>
@@ -180,7 +184,10 @@ export const dbCommon = {
                 when other.user_id is not null then true else false end
             `.as("other"),
       ])
-      .$if(!!userId, (qb) => qb.where("u.id", "<>", userId));
+      .$if(!!userId, (qb) => qb.where("u.id", "<>", userId))
+      .$if(!!searchTerm, (qb) =>
+        qb.where("u.handle", "ilike", `%${searchTerm}%`)
+      );
   },
   getShareUsers: (trx: Transaction<DB>, userId: number, postId: number) => {
     const q = dbCommon
@@ -201,22 +208,20 @@ export const dbCommon = {
 
     return q.execute();
   },
-  getUsersWithStatus: (
+  getUsers: (
     trx: Transaction<DB>,
     userId: number | null = null,
     searchTerm = ""
   ) => {
-    const q = dbCommon
-      .getUsersBaseQuery(trx, userId)
-      .where("u.handle", "ilike", `%${searchTerm}%`);
+    const q = dbCommon.getUsersBaseQuery(trx, userId, searchTerm);
 
     return q.execute();
   },
-  getFriendUsers: (trx: Transaction<DB>, userId: number) => {
+  getFriendUsers: (trx: Transaction<DB>, userId: number, term?: string) => {
     return trx
       .selectFrom("user as u")
       .innerJoin(
-        dbCommon.getUsersBaseQuery(trx, userId).as("ustatus"),
+        dbCommon.getUsersBaseQuery(trx, userId, term).as("ustatus"),
         "ustatus.id",
         "u.id"
       )
