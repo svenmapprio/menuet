@@ -128,7 +128,7 @@ exports.dbCommon = {
         }
         return session;
     }),
-    getUsersBaseQuery: (trx, userId) => {
+    getUsersBaseQuery: (trx, userId, searchTerm) => {
         return trx
             .selectFrom(["user as u"])
             .leftJoin("friend as self", (join) => join.on("self.userId", "=", userId).onRef("self.friendId", "=", "u.id"))
@@ -145,7 +145,8 @@ exports.dbCommon = {
                 when other.user_id is not null then true else false end
             `.as("other"),
         ])
-            .$if(!!userId, (qb) => qb.where("u.id", "<>", userId));
+            .$if(!!userId, (qb) => qb.where("u.id", "<>", userId))
+            .$if(!!searchTerm, (qb) => qb.where("u.handle", "ilike", `%${searchTerm}%`));
     },
     getShareUsers: (trx, userId, postId) => {
         const q = exports.dbCommon
@@ -161,16 +162,14 @@ exports.dbCommon = {
             .where("other.userId", "is not", null);
         return q.execute();
     },
-    getUsersWithStatus: (trx, userId = null, searchTerm = "") => {
-        const q = exports.dbCommon
-            .getUsersBaseQuery(trx, userId)
-            .where("u.handle", "ilike", `%${searchTerm}%`);
+    getUsers: (trx, userId = null, searchTerm = "") => {
+        const q = exports.dbCommon.getUsersBaseQuery(trx, userId, searchTerm);
         return q.execute();
     },
-    getFriendUsers: (trx, userId) => {
+    getFriendUsers: (trx, userId, term) => {
         return trx
             .selectFrom("user as u")
-            .innerJoin(exports.dbCommon.getUsersBaseQuery(trx, userId).as("ustatus"), "ustatus.id", "u.id")
+            .innerJoin(exports.dbCommon.getUsersBaseQuery(trx, userId, term).as("ustatus"), "ustatus.id", "u.id")
             .select(["u.id", "u.handle", "ustatus.self", "ustatus.other"])
             .where("ustatus.self", "=", true)
             .where("ustatus.other", "=", true)
@@ -189,7 +188,9 @@ exports.dbCommon = {
                 "post.description",
                 "post.placeId",
             ])
-                .whereRef("post.id", "=", "outer.id")).as("post"),
+                .whereRef("post.id", "=", "outer.id"))
+                .$notNull()
+                .as("post"),
             //#region place
             (0, postgres_1.jsonObjectFrom)(sq
                 .selectFrom("place as subPlace")
@@ -205,7 +206,9 @@ exports.dbCommon = {
                 "subPlace.googlePlaceId",
                 "subPlace.created",
             ])
-                .whereRef("subPlace.id", "=", "outer.placeId")).as("place"),
+                .whereRef("subPlace.id", "=", "outer.placeId"))
+                .$notNull()
+                .as("place"),
             //#endregion place
             //#endregion post
             //#region relations
@@ -234,7 +237,9 @@ exports.dbCommon = {
                     .innerJoin("user", "user.id", "conversationUser.userId")
                     .select(["user.id", "user.handle"])
                     .where("conversationUser.userId", "<>", userId)
-                    .whereRef("conversationUser.conversationId", "=", "conversationOuter.id")).as("user"),
+                    .whereRef("conversationUser.conversationId", "=", "conversationOuter.id"))
+                    .$notNull()
+                    .as("user"),
                 //#endregion conversations.user
             ])
                 .whereRef("conversationOuter.postId", "=", "outer.id")
@@ -243,30 +248,6 @@ exports.dbCommon = {
         ])
             .where("outer.id", "=", postId)
             .executeTakeFirstOrThrow();
-        /*
-                 //#region conversations.messages
-                            jsonArrayFrom(
-                                ssq.selectFrom('message as messageOuter')
-                                .select(sssq => [
-                                    //#region conversations.messages.message
-                                    jsonObjectFrom(
-                                        sssq.selectFrom('message')
-                                        .select(['message.id', 'message.text', 'message.created', 'message.userId', 'message.conversationId'])
-                                        .whereRef('message.id', '=', 'messageOuter.id')
-                                    ).as('message'),
-                                    //#endregion conversations.messages.message
-                                    //#region conversations.messages.user
-                                    jsonObjectFrom(
-                                        sssq.selectFrom('user')
-                                        .select(['user.id', 'user.handle'])
-                                        .whereRef('user.id', '=', 'messageOuter.userId')
-                                    ).as('user'),
-                                    //#endregion conversations.messages.user
-                                ])
-                                .whereRef('messageOuter.conversationId', '=', 'conversationOuter.id')
-                            ).as('messages')
-                            //#endregion conversations.messages
-                 */
         return details;
     }),
     sharePost: (trx, postId, userId, session) => __awaiter(void 0, void 0, void 0, function* () {
