@@ -32,10 +32,15 @@ export const routeHandlers: PublicRouteHandlers = {
           .execute();
       }
 
-      pgEmitter
+      const groups = pgEmitter
         .to(targetUserId.toString())
-        .to(sourceUserId.toString())
-        .emit("mutation", "users");
+        .to(sourceUserId.toString());
+
+      groups.emit("mutation", "users");
+
+      groups.emit("mutation", ["users", "search"]);
+
+      groups.emit("mutation", "friends");
     },
     userPost: async ({ trx, postId, userId, session }) => {
       await trx
@@ -534,10 +539,15 @@ export const routeHandlers: PublicRouteHandlers = {
         .onConflict((oc) => oc.columns(["friendId", "userId"]).doNothing())
         .execute();
 
-      pgEmitter
+      const groups = pgEmitter
         .to(targetUserId.toString())
-        .to(sourceUserId.toString())
-        .emit("mutation", "users");
+        .to(sourceUserId.toString());
+
+      groups.emit("mutation", "users");
+
+      groups.emit("mutation", ["users", "search"]);
+
+      groups.emit("mutation", "friends");
     },
     group: async ({}) => {},
     groupConversation: async ({}) => {},
