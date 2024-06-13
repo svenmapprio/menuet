@@ -107,7 +107,29 @@ const apple = {
 
       if (!idToken) throw tokenResponse;
 
-      setRefreshTokenCookie(newHeaders, tokenResponse.refresh_token, "apple");
+      const { id } = await db.transaction().execute((trx) =>
+        trx
+          .insertInto("oauthSession")
+          .values({
+            accessToken: tokenResponse.access_token,
+            refreshToken: tokenResponse.refresh_token,
+            provider: "google",
+          })
+          .returning("id")
+          .executeTakeFirstOrThrow()
+      );
+
+      const expires = new Date();
+
+      expires.setMonth(expires.getMonth() + 6);
+
+      cookies().set("oauth_session_id", `${id}`, {
+        secure: true,
+        sameSite: "strict",
+        expires,
+      });
+
+      //   setRefreshTokenCookie(newHeaders, tokenResponse.refresh_token, "apple");
 
       return apple.getPayload(idToken);
     } catch (err) {
@@ -345,6 +367,30 @@ export const deleteCookie = (
   ] = `${key}=unset;Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=0;`;
 };
 
+const getAppleOauthSession = async (
+  trx: Transaction<DB>,
+  { id, accessToken, refreshToken }: Selectable<OauthSession>
+) => {
+  try {
+    const res = await appleSignin.refreshAuthorizationToken(
+      refreshToken,
+      appleOptions()
+    );
+
+    await trx
+      .updateTable("oauthSession")
+      .set({ accessToken: res.access_token, refreshToken: res.refresh_token })
+      .where("id", "=", id)
+      .execute();
+
+    const { sub } = await appleSignin.verifyIdToken(res.id_token);
+
+    return await dbCommon.getSessionBy(trx, { sub });
+  } catch {
+    return null;
+  }
+};
+
 const getGoogleOauthSession = async (
   trx: Transaction<DB>,
   { id, accessToken, refreshToken }: Selectable<OauthSession>
@@ -405,6 +451,8 @@ const getOauthSession = async () => {
     switch (oauthSession.provider) {
       case "google":
         return await getGoogleOauthSession(trx, oauthSession);
+      case "apple":
+        return await getAppleOauthSession(trx, oauthSession);
     }
   });
 };
