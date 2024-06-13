@@ -2,9 +2,8 @@
 
 import SessionContext from "@/contexts/SessionContext";
 import SocketContext from "@/contexts/SocketContext";
+import { UsersListItem } from "@/types/returnTypes";
 import { domains } from "@/utils/fetch";
-import { Returns } from "@/utils/routes";
-import { UsersListItem } from "@/utils/types";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FC, useContext, useEffect, useRef, useState } from "react";
