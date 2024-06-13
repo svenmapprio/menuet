@@ -14,7 +14,10 @@ import {
 
 export type Session = {
   account: Pick<Selectable<Account>, "email" | "type" | "sub">;
-  user: Pick<Selectable<User>, "name" | "handle" | "id">;
+  user: Pick<
+    Selectable<User>,
+    "name" | "handle" | "id" | "firstName" | "lastName"
+  >;
 };
 
 export type ShareUsersListItem = Pick<Selectable<User>, "handle" | "id"> & {

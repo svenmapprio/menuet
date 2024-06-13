@@ -111,6 +111,8 @@ export const dbCommon = {
             handle: sessionFlat.handle,
             id: sessionFlat.id,
             name: sessionFlat.name,
+            firstName: sessionFlat.firstName,
+            lastName: sessionFlat.lastName,
           },
         }
       : null;
