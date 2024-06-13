@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "codegen": "npx kysely-codegen --camel-case --out-file utils/tables.d.ts"
+    "codegen": "npx kysely-codegen --camel-case --out-file types/tables.d.ts"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.332.0",

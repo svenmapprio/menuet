@@ -1,28 +1,10 @@
-import { db, dbCommon, emitServer } from "@/utils/db";
-import { Session } from "@/utils/types";
+import { db, dbCommon } from "@/utils/db";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import appleSignin, { AppleIdTokenType } from "apple-signin-auth";
 import { cookies, headers } from "next/headers";
-
-/*
-const buildSecret = async () => {
-    const jwt = new jose.SignJWT({
-        'iat': Date.now() / 1000,
-		'exp': Date.now() / 1000 + 3600,
-		'iss': process.env.APPLE_TEAM_ID!,
-		'aud': 'https://appleid.apple.com',
-		'sub': process.env.APPLE_BUNDLE_ID!,
-    });
-
-    const appleKey = process.env.APPLE_PRIVATE_KEY!;
-
-    jwt.setProtectedHeader({alg: 'ES256', kid: process.env.APPLE_PRIVATE_KEY_ID!});
-
-    const key = await jose.importPKCS8(appleKey, 'es256');
-
-    return jwt.sign(key);
-}
-*/
+import { Account, User, DB, OauthSession } from "@/types/tables";
+import { Selectable, Transaction } from "kysely";
+import { Session } from "@/types/returnTypes";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -54,23 +36,58 @@ const appleOptions = () => {
   };
 };
 
+// const googleOauth = JSON.parse(process.env.GOOGLE_OAUTH_CONFIG ?? "{}");
+
+// const redirect = process.env.NEXT_PUBLIC_API_URL;
+
+// const googleClient = new OAuth2Client(
+//   googleOauth?.web?.client_id,
+//   googleOauth?.web?.client_secret,
+//   redirect
+// );
+
+// const appleClientSecret = () => {
+//   return appleSignin.getClientSecret({
+//     clientID: process.env.APPLE_BUNDLE_ID!,
+//     teamID: process.env.APPLE_TEAM_ID!,
+//     privateKey: process.env.APPLE_PRIVATE_KEY!,
+//     keyIdentifier: process.env.APPLE_PRIVATE_KEY_ID!,
+//   });
+// };
+
+// const appleOptions = () => {
+//   return {
+//     clientID: process.env.APPLE_BUNDLE_ID!,
+//     redirectUri: "http://localhost",
+//     clientSecret: appleClientSecret(),
+//   };
+// };
+
 export const getSession = async (
   newHeaders: Record<string, string>
 ): Promise<Session | null> => {
   try {
-    const payload = await wrap.getPayload(newHeaders);
+    const oauthSession = await getOauthSession();
 
-    const { google, apple } = payload;
+    if (oauthSession) return oauthSession;
 
-    const sub = google?.sub ?? apple?.sub;
+    const payload = await getSessionHelpers.getPayload(newHeaders);
 
-    const session = await db
-      .transaction()
-      .execute(async (trx) =>
-        sub ? await dbCommon.getOrPutSession(trx, { sub, google, apple }) : null
-      );
+    const { google, apple, account } = payload;
 
-    if (session && session.user) return session;
+    const sub = account?.sub ?? google?.sub ?? apple?.sub;
+
+    const session = await db.transaction().execute(async (trx) =>
+      sub
+        ? await dbCommon.getOrPutSession(trx, {
+            sub,
+            google,
+            apple,
+          })
+        : null
+    );
+
+    if (session?.user) return session;
   } catch (e) {
     console.log("error", e);
   }
@@ -137,22 +154,47 @@ const apple = {
 };
 
 const google = {
-  handleCode: async (code: string, newHeaders: Record<string, string>) => {
+  handleCode: async (code: string) => {
     const token = await googleClient.getToken(code);
 
     if (!token) return null;
 
-    setRefreshTokenCookie(
-      newHeaders,
-      token.tokens.refresh_token ?? "",
-      "google"
+    const { access_token, refresh_token } = token.tokens;
+
+    if (!access_token || !refresh_token) return null;
+
+    const { id } = await db.transaction().execute((trx) =>
+      trx
+        .insertInto("oauthSession")
+        .values({
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          provider: "google",
+        })
+        .returning("id")
+        .executeTakeFirstOrThrow()
     );
+
+    const expires = new Date();
+
+    expires.setMonth(expires.getMonth() + 6);
+
+    cookies().set("oauth_session_id", `${id}`, {
+      secure: true,
+      sameSite: "strict",
+      expires,
+    });
 
     const idToken = token.tokens.id_token;
 
     if (!idToken) return null;
 
     return await google.getPayload(idToken);
+  },
+  handleAccessToken: async (accessToken: string) => {
+    const token = await googleClient.getTokenInfo(accessToken);
+
+    return { google: { sub: token.sub } as TokenPayload };
   },
   handleRefreshToken: async (refreshToken: string) => {
     googleClient.setCredentials({ refresh_token: refreshToken });
@@ -162,6 +204,8 @@ const google = {
     if (!token) return null;
 
     const idToken = token.credentials.id_token;
+
+    setRefreshTokenCookie({}, token.credentials.refresh_token ?? "", "google");
 
     if (!idToken) return null;
 
@@ -192,9 +236,13 @@ const testProvider = (str: string, provider: "apple" | "google") => {
   return [provider, str.replace(provider, "")];
 };
 
-const wrap = {
-  getCodePayload: async (newHeaders: Record<string, string>) => {
-    const codeAndProvider = headers().get("authorization")?.substring(7);
+export const getSessionHelpers = {
+  getCodePayload: async (
+    newHeaders: Record<string, string>,
+    codeFromRequest?: string
+  ) => {
+    const codeAndProvider =
+      codeFromRequest ?? headers().get("Authorization")?.substring(7);
 
     if (!codeAndProvider) return;
 
@@ -209,7 +257,24 @@ const wrap = {
       provider === "apple"
         ? await apple.handleCode(code, newHeaders)
         : provider === "google"
-        ? await google.handleCode(code, newHeaders)
+        ? await google.handleCode(code)
+        : null;
+
+    return payload;
+  },
+  getAccessPayload: async () => {
+    const accessTokenAndProvider = cookies().get("access_token")?.value;
+
+    if (!accessTokenAndProvider) return null;
+
+    const [provider, accessToken] =
+      testProvider(accessTokenAndProvider, "apple") ??
+      testProvider(accessTokenAndProvider, "google") ??
+      [];
+
+    const payload =
+      provider === "google"
+        ? await google.handleAccessToken(accessToken)
         : null;
 
     return payload;
@@ -234,8 +299,10 @@ const wrap = {
           ? await google.handleRefreshToken(refreshToken)
           : null;
 
+      console.log("got refresh payload");
+
       return payload;
-    } catch {
+    } catch (e) {
       console.log("clearing refresh token");
 
       setRefreshTokenCookie(newHeaders, "");
@@ -245,10 +312,11 @@ const wrap = {
   },
   getPayload: async (
     newHeaders: Record<string, string>
-  ): Promise<{ google?: TokenPayload; apple?: AppleIdTokenType }> =>
-    (await wrap.getCodePayload(newHeaders)) ??
-    (await wrap.getRefreshPayload(newHeaders)) ??
-    {},
+  ): Promise<{
+    account?: Pick<Account, "sub">;
+    google?: TokenPayload;
+    apple?: AppleIdTokenType;
+  }> => (await getSessionHelpers.getCodePayload(newHeaders)) ?? {},
 };
 
 const setRefreshTokenCookie = (
@@ -258,7 +326,85 @@ const setRefreshTokenCookie = (
 ) => {
   const token = provider && refreshToken ? `${provider}${refreshToken}` : "";
 
+  cookies().set(
+    "refresh_token",
+    `${token};Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=99999999;`
+  );
+
   newHeaders[
     "Set-Cookie"
   ] = `refresh_token=${token};Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=99999999;`;
+};
+
+export const deleteCookie = (
+  newHeaders: Record<string, string>,
+  key: string
+) => {
+  newHeaders[
+    "Set-Cookie"
+  ] = `${key}=unset;Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=0;`;
+};
+
+const getGoogleOauthSession = async (
+  trx: Transaction<DB>,
+  { id, accessToken, refreshToken }: Selectable<OauthSession>
+) => {
+  try {
+    const { sub } = await googleClient.getTokenInfo(accessToken);
+
+    if (!sub) throw "token invalid";
+
+    return await dbCommon.getSessionBy(trx, { sub });
+  } catch {
+    googleClient.setCredentials({ refresh_token: refreshToken });
+
+    const newTokens = await googleClient.refreshAccessToken();
+
+    if (!newTokens) return null;
+
+    const { access_token, refresh_token } = newTokens.credentials;
+
+    if (!access_token || !refresh_token) return null;
+
+    await trx
+      .updateTable("oauthSession")
+      .set({ accessToken: access_token, refreshToken: refresh_token })
+      .where("id", "=", id)
+      .execute();
+
+    const { sub } = await googleClient.getTokenInfo(access_token);
+
+    if (!sub) return null;
+
+    console.log("got oauth refresh session");
+
+    return await dbCommon.getSessionBy(trx, { sub });
+  }
+};
+
+const getOauthSession = async () => {
+  const id = cookies().get("oauth_session_id")?.value;
+
+  if (!id) return null;
+
+  return await db.transaction().execute(async (trx) => {
+    const oauthSession = await trx
+      .selectFrom("oauthSession")
+      .select([
+        "oauthSession.created",
+        "oauthSession.id",
+        "oauthSession.accessToken",
+        "oauthSession.refreshToken",
+        "oauthSession.provider",
+      ])
+      .where("oauthSession.id", "=", id)
+      .executeTakeFirst();
+
+    if (!oauthSession) return null;
+
+    switch (oauthSession.provider) {
+      case "google":
+        return await getGoogleOauthSession(trx, oauthSession);
+    }
+  });
 };

@@ -1,7 +1,8 @@
 "use client";
 
+import { Session } from "@/types/returnTypes";
 import { domains } from "@/utils/fetch";
-import { Session } from "@/utils/types";
+
 import {
   createContext,
   FC,
@@ -33,11 +34,10 @@ export const SessionContextProvider: FC<PropsWithChildren> = ({ children }) => {
   const socketContext = useContext(SocketContext);
   const [googleClient, setGoogleClient] =
     useState<google.accounts.oauth2.CodeClient>();
-  // const [code, setCode] = useState<string|null>(null);
 
   const deleteSession = useMutation({
     mutationFn: async () => {
-      await domains.public.delete.session({});
+      await domains.public.delete.session();
     },
     onSuccess() {
       queryClient.invalidateQueries("session");

@@ -17,10 +17,10 @@ import {
   SocketQueryResponse,
   SocketQueryWrapper,
 } from "@/types/serverTypes";
-import { waitUntil } from "@/utils/helpers";
-import { pgEmitter, db, dbCommon } from "@/utils/db";
+import { waitUntil } from "../utils/helpers";
+import { pgEmitter, db, dbCommon } from "../utils/db";
 import axios from "axios";
-import { Session } from "@/types/returnTypes";
+import { Session } from "../types/returnTypes";
 
 const state = {
   connected: false,

@@ -4,19 +4,11 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
-export type Int8 = ColumnType<
-  string,
-  string | number | bigint,
-  string | number | bigint
->;
+export type Int8 = ColumnType<string, string | number | bigint, string | number | bigint>;
 
 export type ParagraphType = "place_description";
 
-export type PlaceInternalStatus =
-  | "done"
-  | "generating"
-  | "generation_failed"
-  | "should_regenerate";
+export type PlaceInternalStatus = "done" | "generating" | "generation_failed" | "should_regenerate";
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
@@ -64,6 +56,14 @@ export interface Message {
   text: Generated<string>;
   created: Generated<Timestamp>;
   userId: number;
+}
+
+export interface OauthSession {
+  refreshToken: string;
+  accessToken: string;
+  created: Generated<Timestamp>;
+  id: Generated<string>;
+  provider: string;
 }
 
 export interface Paragraph {
@@ -115,8 +115,8 @@ export interface User {
   handle: string;
   firstName: string;
   lastName: string | null;
-  name: Generated<string | null>;
   picture: string | null;
+  name: Generated<string | null>;
 }
 
 export interface UserPlace {
@@ -145,6 +145,7 @@ export interface DB {
   friend: Friend;
   latestFriendConversation: LatestFriendConversation;
   message: Message;
+  oauthSession: OauthSession;
   paragraph: Paragraph;
   paragraphUrl: ParagraphUrl;
   place: Place;
