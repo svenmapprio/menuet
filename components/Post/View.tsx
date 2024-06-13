@@ -1,8 +1,6 @@
 "use client";
 
-import { GetContent, Returns } from "@/utils/routes";
-import { Post, UserPostRelation } from "@/utils/tables";
-import { Selectable } from "kysely";
+import { GetContent, Returns } from "@/types/returnTypes";
 import Link from "next/link";
 import Image from "next/image";
 import { FC, PropsWithChildren } from "react";

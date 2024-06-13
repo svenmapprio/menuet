@@ -3,20 +3,9 @@
 import Post from "@/components/Post";
 import Spinner from "@/components/Spinner";
 import { domains } from "@/utils/fetch";
-import { GetMessage, Returns } from "@/utils/routes";
-import { Message } from "@/utils/tables";
-import { Selectable } from "kysely";
+import { GetMessage, Returns } from "@/types/returnTypes";
 import { notFound } from "next/navigation";
-import {
-  FC,
-  FormEvent,
-  FormEventHandler,
-  KeyboardEventHandler,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { FC } from "react";
 import { useMutation, useQuery } from "react-query";
 
 const MessageView: FC<{ message: GetMessage }> = ({

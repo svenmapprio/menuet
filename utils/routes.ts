@@ -1,199 +1,27 @@
-import { Insertable, Selectable } from "kysely";
+import { RouteInfo, Routes, UserRouteInfo } from "@/types/appRoutes";
 import {
-  Content,
-  Conversation,
-  Message,
-  Paragraph,
-  ParagraphUrl,
-  Place,
-  Post,
-  User,
-  UserPostRelation,
-} from "./tables";
-import {
-  RouteInfo,
-  Routes,
   Session,
-  UsersListItem,
+  Returns,
+  GetContent,
   UsersFilter,
   ShareUsersListItem,
-} from "./types";
-
-export type GetContent = Pick<Selectable<Content>, "name" | "id">;
-
-export type PutPost = {
-  post: Insertable<Post>;
-  content: GetContent[];
-  users?: number[];
-};
-
-export type GetMessage = {
-  message: Selectable<Message>;
-  user: Pick<Selectable<User>, "id" | "handle">;
-};
-
-export namespace BingTypes {
-  export type Restaurant = {
-    _type: "Restaurant";
-    id: string;
-    entityPresentationInfo: {
-      entityScenario: string;
-    };
-  };
-
-  export type WebPage = {
-    id: string;
-    name: string;
-    url: string;
-    isFamilyFriendly: boolean;
-    displayUrl: string;
-    snippet: string;
-    deepLinks: Array<{
-      name: string;
-      url: string;
-    }>;
-    dateLastCrawled: string;
-    language: string;
-    isNavigational: boolean;
-  };
-
-  export type SearchResponse = {
-    _type: "SearchResponse";
-    queryContext: {
-      originalQuery: string;
-    };
-    webPages: {
-      webSearchUrl: string;
-      totalEstimatedMatches: number;
-      value: Array<WebPage>;
-    };
-    images: {
-      id: string;
-      readLink: string;
-      webSearchUrl: string;
-      isFamilyFriendly: boolean;
-      value: Array<object>;
-    };
-    places: {
-      value: Array<object>;
-    };
-    rankingResponse: {
-      mainline: { items: Array<any> };
-      sidebar: { items: Array<any> };
-    };
-  };
-}
-
-export namespace OpenaiTypes {
-  export type PlaceDescriptionParagraph = {
-    text: string;
-    sources: string[];
-  };
-
-  export type PlaceDescription = PlaceDescriptionParagraph[];
-
-  export type Place = {
-    name: string;
-    street: string;
-    city: string;
-    country: string;
-    instagramHandle: string | undefined;
-    businessEmail: string | undefined;
-    description: PlaceDescription;
-    tags: string[];
-  };
-}
-
-export namespace GoogleTypes {
-  export type AutocompleteResponse = {
-    predictions: AutocompletePlace[];
-  };
-
-  export type AutocompletePlace = {
-    description: string;
-    place_id: string;
-    structured_formatting: {
-      main_text: string;
-      secondary_text: string;
-    };
-    terms: { offset: number; value: string }[];
-    types: string[];
-  };
-}
-
-export namespace Returns {
-  export type UserItem = Pick<Selectable<User>, "id" | "handle">;
-
-  export type ChatDetails = {
-    user: Pick<Selectable<User>, "id" | "handle">;
-    conversations: {
-      conversation: Pick<Selectable<Conversation>, "id">;
-      messagesCount: number;
-      post: Selectable<Post> & {
-        relation: UserPostRelation;
-        place: Pick<Selectable<Place>, "id" | "name">;
-      };
-      content: { name: string }[];
-    }[];
-  };
-
-  export type Chats = {
-    user: Pick<Selectable<User>, "id" | "handle">;
-    conversation: {
-      post: Selectable<Post> & {
-        place: Pick<Selectable<Place>, "id" | "name">;
-      };
-      message?: Pick<Selectable<Message>, "id" | "text" | "created" | "userId">;
-    };
-  }[];
-
-  export type ConversationDetails = {
-    conversation: Omit<Selectable<Conversation>, "latestMessageId">;
-    messages: GetMessage[];
-  };
-
-  export type PostDetails = {
-    post: Selectable<Post>;
-    place: Selectable<Place>;
-    content: GetContent[];
-    relations: { relation: UserPostRelation }[];
-
-    conversations: {
-      id: number;
-      user: Pick<Selectable<User>, "id" | "handle">;
-    }[];
-  };
-
-  export type PostListItem = {
-    post: Selectable<Post>;
-    place: Selectable<Place>;
-    content: GetContent[];
-  };
-
-  export type PlaceDetails = {
-    place: Selectable<Place>;
-    paragraphs: {
-      paragraph: Selectable<Paragraph>;
-      sources: Selectable<ParagraphUrl>[];
-    }[];
-  };
-
-  export type PlacePredictions =
-    GoogleTypes.AutocompleteResponse["predictions"];
-}
+  PutPost,
+  UsersListItem,
+} from "@/types/returnTypes";
+import { User, UserPostRelation } from "@/types/tables";
 
 export interface PublicRoutes extends Routes {
   get: {
     beep: RouteInfo<{ socketId: string }>;
     session: RouteInfo<{}, Session | null>;
     users: RouteInfo<{ term?: string; filter?: UsersFilter }, UsersListItem[]>;
-    shareUsers: RouteInfo<{ postId: number }, ShareUsersListItem[]>;
-    posts: RouteInfo<{}, Returns.PostListItem[]>;
-    post: RouteInfo<{ postId: number }, Returns.PostDetails | undefined>;
-    content: RouteInfo<{ contentId: number }, GetContent | undefined>;
-    chats: RouteInfo<void, Returns.Chats>;
-    chat: RouteInfo<{ userId: number }, Returns.ChatDetails>;
-    conversation: RouteInfo<
+    shareUsers: UserRouteInfo<{ postId: number }, ShareUsersListItem[]>;
+    posts: UserRouteInfo<void, Returns.PostListItem[]>;
+    post: UserRouteInfo<{ postId: number }, Returns.PostDetails | undefined>;
+    content: UserRouteInfo<{ contentId: number }, GetContent | undefined>;
+    chats: UserRouteInfo<void, Returns.Chats>;
+    chat: UserRouteInfo<{ userId: number }, Returns.ChatDetails>;
+    conversation: UserRouteInfo<
       { conversationId: number },
       Returns.ConversationDetails
     >;
@@ -201,30 +29,33 @@ export interface PublicRoutes extends Routes {
     places: RouteInfo<{ name: string }, Returns.PlacePredictions>;
   };
   delete: {
-    session: RouteInfo;
-    friend: RouteInfo<{ userId: number }>;
-    userPost: RouteInfo<{ postId: number; userId: number }>;
+    session: UserRouteInfo;
+    friend: UserRouteInfo<{ userId: number }>;
+    userPost: UserRouteInfo<{ postId: number; userId: number }>;
   };
   put: {
-    user: RouteInfo<{
+    user: UserRouteInfo<{
       user: Partial<Omit<User, "id" | "name">>;
       defaultHandle: boolean;
     }>;
-    friend: RouteInfo<{ userId: number }>;
-    group: RouteInfo<{ name: string }>;
-    groupMember: RouteInfo<{
+    friend: UserRouteInfo<{ userId: number }>;
+    group: UserRouteInfo<{ name: string }>;
+    groupMember: UserRouteInfo<{
       groupId: number;
       userId: number;
       role: "owner" | "member";
     }>;
-    groupConversation: RouteInfo<{ groupId: number; conversationId: number }>;
-    conversation: RouteInfo<{}>;
-    message: RouteInfo<
+    groupConversation: UserRouteInfo<{
+      groupId: number;
+      conversationId: number;
+    }>;
+    conversation: UserRouteInfo<{}>;
+    message: UserRouteInfo<
       { conversationId: number; text: string },
       { id: number; created: Date }
     >;
-    post: RouteInfo<PutPost, { id: number }>;
-    place: RouteInfo<
+    post: UserRouteInfo<PutPost, { id: number }>;
+    place: UserRouteInfo<
       {
         googlePlaceId: string;
         description: string;
@@ -232,9 +63,9 @@ export interface PublicRoutes extends Routes {
       },
       { id: number } | undefined
     >;
-    content: RouteInfo<{}, { id: number }>;
-    postContent: RouteInfo<{ postId: number; contentId: number }>;
-    userPost: RouteInfo<{
+    content: UserRouteInfo<{}, { id: number }>;
+    postContent: UserRouteInfo<{ postId: number; contentId: number }>;
+    userPost: UserRouteInfo<{
       userId: number;
       postId: number;
       relation: UserPostRelation;

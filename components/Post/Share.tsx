@@ -1,11 +1,10 @@
 "use client";
 
 import { FC, useCallback } from "react";
-import { ShareUsersListItem } from "@/utils/types";
+import { ShareUsersListItem, Returns } from "@/types/returnTypes";
 import { useMutation, useQuery } from "react-query";
 import { domains } from "@/utils/fetch";
 import Spinner from "../Spinner";
-import { Returns } from "@/utils/routes";
 
 const ShareUserView: FC<{ postId: number; shareUser: ShareUsersListItem }> = ({
   postId,

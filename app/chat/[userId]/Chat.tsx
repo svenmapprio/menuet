@@ -2,7 +2,7 @@
 
 import Spinner from "@/components/Spinner";
 import { domains } from "@/utils/fetch";
-import { Returns } from "@/utils/routes";
+import { Returns } from "@/types/returnTypes";
 import Link from "next/link";
 import { FC } from "react";
 import { useQuery } from "react-query";

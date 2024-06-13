@@ -23,8 +23,8 @@ const socket_io_1 = require("socket.io");
 const express_1 = __importDefault(require("express"));
 const pg_1 = require("pg");
 const postgres_adapter_1 = require("@socket.io/postgres-adapter");
-const helpers_1 = require("../utils/helpers");
-const db_1 = require("../utils/db");
+const helpers_1 = require("@/utils/helpers");
+const db_1 = require("@/utils/db");
 const axios_1 = __importDefault(require("axios"));
 const state = {
     connected: false,

@@ -4,12 +4,13 @@ import {
   jsonObjectFrom,
   jsonArrayFrom,
 } from "kysely/helpers/postgres";
-import { GetContent, GoogleTypes, PublicRoutes } from "./routes";
-import { RouteHandlers } from "./types";
-import { db, dbCommon, emitServer, pgEmitter } from "./db";
-import { Content } from "./tables";
+import { PublicRoutes } from "./routes";
+
+import { dbCommon, pgEmitter } from "./db";
 import axios from "axios";
 import { spawn } from "child_process";
+import { RouteHandlers } from "@/types/appRoutes";
+import { GetContent, GoogleTypes } from "@/types/returnTypes";
 
 export interface PublicRouteHandlers extends RouteHandlers<PublicRoutes> {}
 
@@ -72,7 +73,7 @@ export const routeHandlers: PublicRouteHandlers = {
         : pgEmitter.to(socketId).emit("boop");
     },
     session: async ({ trx, session }) => {
-      return session ?? undefined;
+      return session ?? null;
     },
     posts: async ({ trx, session }) =>
       await trx
@@ -136,7 +137,7 @@ export const routeHandlers: PublicRouteHandlers = {
     post: async ({ trx, postId, session }) => {
       return dbCommon.getPost(trx, postId, session.user.id);
     },
-    content: async ({ trx, contentId, session }) => {
+    content: async ({ trx, contentId }) => {
       return await trx
         .selectFrom("content")
         .select(["content.name", "content.id"])
@@ -272,23 +273,8 @@ export const routeHandlers: PublicRouteHandlers = {
         .where("lfc.userId", "=", session.user.id);
 
       return await latestConvos.execute();
-
-      // return await trx.selectFrom('conversationUser as cua')
-      //     .innerJoin('conversationUser as cub', 'cub.conversationId', 'cua.conversationId')
-      //     .innerJoin('user as other', 'other.id', 'cub.userId')
-      //     .innerJoin('latestFriendConversation as lfc', 'lfc.conversationId', 'cua.conversationId')
-      //     .innerJoin('conversation', 'conversation')
-      //     .innerJoin('post', 'post.id', )
-      //     .select(sq => [
-      //         jsonObjectFrom(sq.selectFrom('user').select(['id', 'handle']).whereRef('user.id', '=', 'cua.userId')).as('user'),
-
-      //     ])
-      //     .where('cua.userId', '=', session.user.id)
-      //     .where('other.id', '<>', session.user.id)
-      //     .distinct()
-      //     .execute();
     },
-    conversation: async ({ conversationId, trx, session }) => {
+    conversation: async ({ conversationId, trx }) => {
       const conversation = await trx
         .selectFrom("conversation")
         .select([

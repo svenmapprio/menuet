@@ -8,14 +8,17 @@ import {
   Transaction,
   ExpressionBuilder,
 } from "kysely";
-import { Emission, EmissionWrapper, Session, UsersFilter } from "./types";
+
 import { TokenPayload } from "google-auth-library";
 import { NextRequest } from "next/server";
-import { DB } from "./tables";
+
 import { cookies } from "next/headers";
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/postgres";
-import { Returns } from "./routes";
+
 import { AppleIdTokenType } from "apple-signin-auth";
+import { Emission, EmissionWrapper } from "@/types/serverTypes";
+import { DB } from "@/types/tables";
+import { Returns, Session } from "@/types/returnTypes";
 
 const dbPool = new Pool({
   host: process.env.DATABASE_HOST,
@@ -108,8 +111,6 @@ export const dbCommon = {
             handle: sessionFlat.handle,
             id: sessionFlat.id,
             name: sessionFlat.name,
-            firstName: sessionFlat.firstName,
-            lastName: sessionFlat.lastName,
           },
         }
       : null;

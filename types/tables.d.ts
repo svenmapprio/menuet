@@ -4,11 +4,19 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
-export type Int8 = ColumnType<string, string | number | bigint, string | number | bigint>;
+export type Int8 = ColumnType<
+  string,
+  string | number | bigint,
+  string | number | bigint
+>;
 
 export type ParagraphType = "place_description";
 
-export type PlaceInternalStatus = "done" | "generating" | "generation_failed" | "should_regenerate";
+export type PlaceInternalStatus =
+  | "done"
+  | "generating"
+  | "generation_failed"
+  | "should_regenerate";
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 

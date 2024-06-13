@@ -1,7 +1,6 @@
 import { fecthCommon } from "@/utils/serverUtils";
 import { notFound } from "next/navigation";
 import PostComponents from "components/Post";
-import { parseIntForce } from "@/utils/helpers";
 
 export default async function Page({
   params: { postId },

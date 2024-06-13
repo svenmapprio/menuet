@@ -2,9 +2,8 @@
 
 import { baseUrl, domains } from "@/utils/fetch";
 import { useForm } from "@/utils/form";
-import { Returns } from "@/utils/routes";
-import { Post } from "@/utils/tables";
-import { GetContent } from "@/utils/routes";
+import { Returns, GetContent } from "@/types/returnTypes";
+import { Post } from "@/types/tables";
 import axios from "axios";
 import { Insertable } from "kysely";
 import Image from "next/image";

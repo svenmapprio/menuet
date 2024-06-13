@@ -12,15 +12,12 @@ import {
 } from "react";
 import { io, Socket } from "socket.io-client";
 import { setCookie } from "nookies";
-import Spinner from "@/components/Spinner";
 import {
-  SocketQuery,
   SocketQueryRequest,
   SocketQueryResponse,
   SocketQueryReturns,
   SocketQueryWrapper,
-} from "@/utils/types";
-import { domains } from "@/utils/fetch";
+} from "@/types/serverTypes";
 
 type SocketQueryFunction = <T extends SocketQueryRequest>(
   payload: T

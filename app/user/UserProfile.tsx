@@ -3,14 +3,14 @@
 import TextInput from "@/components/TextInput";
 import useSessionData from "@/hooks/useSessionData";
 import { domains } from "@/utils/fetch";
-import { Session } from "@/utils/types";
 import Link from "next/link";
 import { FC, ReactElement, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import * as yup from "yup";
 import { Insertable } from "kysely";
-import { User } from "@/utils/tables";
 import { useForm } from "@/utils/form";
+import { Session } from "@/types/returnTypes";
+import { User } from "@/types/tables";
 
 // type CompObject<T extends Object> = {[k in keyof T]: ReactElement};
 
@@ -72,7 +72,7 @@ const UserInfo: FC<{ session: Session }> = ({ session }) => {
   });
 
   const postsData = useQuery({
-    queryFn: () => domains.public.get.posts({}),
+    queryFn: () => domains.public.get.posts(),
     queryKey: "posts",
   });
 

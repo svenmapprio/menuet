@@ -13,14 +13,14 @@ import { createAdapter } from "@socket.io/postgres-adapter";
 import {
   Emission,
   EmissionWrapper,
-  Session,
   SocketQuery,
   SocketQueryResponse,
   SocketQueryWrapper,
-} from "../utils/types";
-import { waitUntil } from "../utils/helpers";
-import { pgEmitter, db, dbCommon } from "../utils/db";
+} from "@/types/serverTypes";
+import { waitUntil } from "@/utils/helpers";
+import { pgEmitter, db, dbCommon } from "@/utils/db";
 import axios from "axios";
+import { Session } from "@/types/returnTypes";
 
 const state = {
   connected: false,

@@ -1,8 +1,9 @@
-import { Kysely, sql, Transaction } from "kysely";
+import { RouteGuards } from "@/types/appRoutes";
+import { Session } from "@/types/returnTypes";
+import { DB } from "@/types/tables";
+import { Transaction } from "kysely";
 import { ApiError, ErrorCode } from "./db";
 import { PublicRoutes } from "./routes";
-import { DB } from "./tables";
-import { RouteGuards, Session } from "./types";
 
 export interface PublicRouteGuards extends RouteGuards<PublicRoutes> {}
 
