@@ -19,7 +19,7 @@ export const routeHandlers: PublicRouteHandlers = {
     session: async ({ req, headers, session }) => {
       headers[
         "Set-Cookie"
-      ] = `refresh_token=unset;Secure; HttpOnly; SameSite=None; Path=/; Max-Age=0;`;
+      ] = `oauth_session_id=unset;Secure; HttpOnly; SameSite=None; Path=/; Max-Age=0;`;
     },
     friend: async ({ trx, session, userId }) => {
       const sourceUserId = session.user.id;
