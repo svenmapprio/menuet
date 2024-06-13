@@ -3,9 +3,10 @@ import sharp from "sharp";
 import { Upload } from "@aws-sdk/lib-storage";
 import { S3Client } from "@aws-sdk/client-s3";
 import { Readable, Writable } from "stream";
-import { getSession } from "../utils";
+
 import { ApiError, db, ErrorCode } from "@/utils/db";
 import { routeHandlers } from "@/utils/routeHandlers";
+import { getSession } from "@/utils/session";
 
 const s3 = new S3Client({
   forcePathStyle: false,
