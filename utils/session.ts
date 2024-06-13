@@ -96,7 +96,7 @@ export const getSession = async (
 };
 
 const apple = {
-  handleCode: async (code: string, newHeaders: Record<string, string>) => {
+  handleCode: async (code: string) => {
     try {
       const tokenResponse = await appleSignin.getAuthorizationToken(
         code,
@@ -113,7 +113,7 @@ const apple = {
           .values({
             accessToken: tokenResponse.access_token,
             refreshToken: tokenResponse.refresh_token,
-            provider: "google",
+            provider: "apple",
           })
           .returning("id")
           .executeTakeFirstOrThrow()
@@ -277,7 +277,7 @@ export const getSessionHelpers = {
 
     const payload =
       provider === "apple"
-        ? await apple.handleCode(code, newHeaders)
+        ? await apple.handleCode(code)
         : provider === "google"
         ? await google.handleCode(code)
         : null;
