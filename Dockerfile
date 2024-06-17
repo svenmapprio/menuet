@@ -23,7 +23,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - \
 
 WORKDIR /menuet/
 COPY package.json package.json
-RUN npm install
+RUN npm install \
+    && npm install typescript -g
 COPY app app 
 COPY components components 
 COPY contexts contexts 
@@ -37,7 +38,7 @@ COPY types types
 COPY .eslintrc.json next.config.js tsconfig.json ./
 RUN npx next build
 WORKDIR /socket/
-RUN npx tsc
+RUN tsc
 WORKDIR /
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
