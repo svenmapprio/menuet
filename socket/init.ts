@@ -34,6 +34,22 @@ app.get("/connection", (req, res) => {
   res.send(state.connected);
 });
 
+app.get("/ready", async (req, res) => {
+  console.log("ready check");
+
+  try {
+    await axios.get("http://localhost:3000/api/ready");
+
+    if (!state.connected) throw "socket not ready";
+  } catch (e) {
+    console.log("not ready", e);
+
+    res.status(503).send();
+  }
+
+  res.status(200).send();
+});
+
 const server = app.listen(4010);
 
 const online = async () => axios.get("https:/8.8.8.8");
@@ -43,17 +59,13 @@ const startSocket = async () => {
 
   console.log("checking online status");
 
+  state.connected = false;
+
+  await new Promise<void>((res) => setTimeout(res, 5000));
+
   await waitUntil(online, 1000);
 
   console.log("server is online");
-
-  console.log(
-    process.env.DATABASE_HOST,
-    process.env.DATABASE_LISTEN_DB,
-    process.env.DATABASE_PORT,
-    process.env.DATABASE_PASS,
-    process.env.DATABASE_USER
-  );
 
   const pool = new Pool({
     host: process.env.DATABASE_HOST,
@@ -150,21 +162,6 @@ const startSocket = async () => {
       console.log("got adapter disconnect", e);
     });
 
-    // adapter.on("emission", (e: EmissionWrapper) => {
-    //   console.log("got emission", e.emissionPayload.type);
-
-    //   if (!e.isEmission) {
-    //     console.warn("Non emission payload sent to emission channel, ignoring");
-    //     return;
-    //   }
-
-    //   const emission = e.emissionPayload;
-
-    //   emissionHandlers[emission.type](e.socketId, (emission.data ?? {}) as any);
-    // });
-
-    // adapter.on('server custom event', e => console.log('from api'));
-
     adapter.on("startup", (e) => {
       state.connected = true;
       console.log("got startup event", e);
@@ -172,19 +169,6 @@ const startSocket = async () => {
 
     res();
   });
-
-  state.connected = true;
-
-  // const restartSocket = async () => {
-  //     console.log('restarting socket');
-  //     state.restarting = true;
-
-  //     await new Promise<void>(res => io.close(e => {console.log('io close'); res()}));
-  //     // await new Promise<void>(res => server.close(e => {console.log('server close'); res()}));
-
-  //     await startSocket();
-  //     state.restarting = false;
-  // };
 
   setTimeout(() => {
     console.log("emitting server side startup message");

@@ -35,15 +35,29 @@ const app = (0, express_1.default)();
 app.get("/connection", (req, res) => {
     res.send(state.connected);
 });
+app.get("/ready", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("ready check");
+    try {
+        yield axios_1.default.get("http://localhost:3000/api/ready");
+        if (!state.connected)
+            throw "socket not ready";
+    }
+    catch (e) {
+        console.log("not ready", e);
+        res.status(503).send();
+    }
+    res.status(200).send();
+}));
 const server = app.listen(4010);
 const online = () => __awaiter(void 0, void 0, void 0, function* () { return axios_1.default.get("https:/8.8.8.8"); });
 const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     console.log("initiating socket.io");
     console.log("checking online status");
+    state.connected = false;
+    yield new Promise((res) => setTimeout(res, 5000));
     yield (0, helpers_1.waitUntil)(online, 1000);
     console.log("server is online");
-    console.log(process.env.DATABASE_HOST, process.env.DATABASE_LISTEN_DB, process.env.DATABASE_PORT, process.env.DATABASE_PASS, process.env.DATABASE_USER);
     const pool = new pg_1.Pool({
         host: process.env.DATABASE_HOST,
         database: process.env.DATABASE_LISTEN_DB,
@@ -116,31 +130,12 @@ const startSocket = () => __awaiter(void 0, void 0, void 0, function* () {
         adapter.on("disconnect", (e) => {
             console.log("got adapter disconnect", e);
         });
-        // adapter.on("emission", (e: EmissionWrapper) => {
-        //   console.log("got emission", e.emissionPayload.type);
-        //   if (!e.isEmission) {
-        //     console.warn("Non emission payload sent to emission channel, ignoring");
-        //     return;
-        //   }
-        //   const emission = e.emissionPayload;
-        //   emissionHandlers[emission.type](e.socketId, (emission.data ?? {}) as any);
-        // });
-        // adapter.on('server custom event', e => console.log('from api'));
         adapter.on("startup", (e) => {
             state.connected = true;
             console.log("got startup event", e);
         });
         res();
     }));
-    state.connected = true;
-    // const restartSocket = async () => {
-    //     console.log('restarting socket');
-    //     state.restarting = true;
-    //     await new Promise<void>(res => io.close(e => {console.log('io close'); res()}));
-    //     // await new Promise<void>(res => server.close(e => {console.log('server close'); res()}));
-    //     await startSocket();
-    //     state.restarting = false;
-    // };
     setTimeout(() => {
         console.log("emitting server side startup message");
         db_1.pgEmitter.serverSideEmit("startup", `startup message, ${Date.now()}`);
