@@ -37,7 +37,7 @@ COPY utils utils
 COPY types types
 COPY .eslintrc.json next.config.js tsconfig.json ./
 RUN npx next build
-WORKDIR /socket/
+WORKDIR /menuet/socket/
 RUN tsc
 WORKDIR /
 COPY nginx.conf /etc/nginx/nginx.conf
