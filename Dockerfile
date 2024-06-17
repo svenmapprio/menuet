@@ -33,8 +33,11 @@ COPY socket socket
 COPY services services 
 COPY styles styles 
 COPY utils utils 
+COPY types types
 COPY .eslintrc.json next.config.js tsconfig.json ./
 RUN npx next build
+WORKDIR /socket/
+RUN npx tsc
 WORKDIR /
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
