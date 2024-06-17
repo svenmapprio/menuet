@@ -61,8 +61,6 @@ const startSocket = async () => {
 
   state.connected = false;
 
-  await new Promise<void>((res) => setTimeout(res, 5000));
-
   await waitUntil(online, 1000);
 
   console.log("server is online");
