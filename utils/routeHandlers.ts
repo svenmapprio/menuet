@@ -37,11 +37,7 @@ export const routeHandlers: PublicRouteHandlers = {
         .to(targetUserId.toString())
         .to(sourceUserId.toString());
 
-      groups.emit("mutation", "users");
-
-      groups.emit("mutation", ["users", "search"]);
-
-      groups.emit("mutation", "friends");
+      groups.emit("mutations", ["users", "friends", ["friend", targetUserId]]);
     },
     userPost: async ({ trx, postId, userId, session }) => {
       await trx
@@ -529,11 +525,7 @@ export const routeHandlers: PublicRouteHandlers = {
         .to(targetUserId.toString())
         .to(sourceUserId.toString());
 
-      groups.emit("mutation", "users");
-
-      groups.emit("mutation", ["users", "search"]);
-
-      groups.emit("mutation", "friends");
+      groups.emit("mutations", ["users", "friends", ["friend", targetUserId]]);
     },
     group: async ({}) => {},
     groupConversation: async ({}) => {},
